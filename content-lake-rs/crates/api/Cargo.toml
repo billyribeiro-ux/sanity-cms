@@ -1,0 +1,33 @@
+[package]
+name = "content-lake-api"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "content-lake-api"
+path = "src/main.rs"
+
+[dependencies]
+content-lake-core = { path = "../core" }
+content-lake-groq = { path = "../groq" }
+
+axum.workspace = true
+tokio.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+sqlx.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+dotenvy.workspace = true
+jsonwebtoken.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }
+reqwest = { version = "0.12", features = ["json"] }
