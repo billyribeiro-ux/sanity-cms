@@ -1,9 +1,9 @@
-/// Document ID parsing utilities.
-///
-/// Sanity document IDs follow conventions:
-/// - Published: `{id}`
-/// - Draft: `drafts.{id}`
-/// - Version: `versions.{releaseId}.{id}`
+//! Document ID parsing utilities.
+//!
+//! Sanity document IDs follow conventions:
+//! - Published: `{id}`
+//! - Draft: `drafts.{id}`
+//! - Version: `versions.{releaseId}.{id}`
 
 const DRAFT_PREFIX: &str = "drafts.";
 const VERSION_PREFIX: &str = "versions.";

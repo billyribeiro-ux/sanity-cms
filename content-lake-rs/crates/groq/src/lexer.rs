@@ -390,9 +390,9 @@ mod tests {
 
     #[test]
     fn tokenize_numbers() {
-        let tokens = tok("42 3.14 -7");
+        let tokens = tok("42 3.125 -7");
         assert_eq!(tokens[0], Token::Integer(42));
-        assert_eq!(tokens[1], Token::Float(3.14));
+        assert_eq!(tokens[1], Token::Float(3.125));
         assert_eq!(tokens[2], Token::Integer(-7));
     }
 

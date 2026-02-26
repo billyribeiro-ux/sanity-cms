@@ -10,7 +10,7 @@ pub enum Mutation {
     CreateOrReplace(CreateOrReplaceMutation),
     CreateIfNotExists(CreateIfNotExistsMutation),
     Delete(DeleteMutation),
-    Patch(PatchMutation),
+    Patch(Box<PatchMutation>),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
