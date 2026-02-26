@@ -1,9 +1,4 @@
-use axum::{
-    Json,
-    extract::State,
-    routing::get,
-    Router,
-};
+use axum::{extract::State, routing::get, Json, Router};
 use serde_json::{json, Value};
 
 use crate::error::ApiResult;
@@ -22,7 +17,9 @@ async fn health_check(State(state): State<AppState>) -> ApiResult<Json<Value>> {
     sqlx::query("SELECT 1")
         .execute(state.pool())
         .await
-        .map_err(|e| crate::error::ApiError::Internal(format!("database health check failed: {e}")))?;
+        .map_err(|e| {
+            crate::error::ApiError::Internal(format!("database health check failed: {e}"))
+        })?;
 
     Ok(Json(json!({
         "status": "ok",

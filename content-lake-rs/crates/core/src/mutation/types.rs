@@ -31,8 +31,13 @@ pub struct CreateIfNotExistsMutation {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum DeleteTarget {
-    ById { id: String },
-    ByQuery { query: String, params: Option<Value> },
+    ById {
+        id: String,
+    },
+    ByQuery {
+        query: String,
+        params: Option<Value>,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,5 +1,5 @@
 use crate::ast::Expr;
-use crate::lexer::{LexError, SpannedToken, Token, tokenize};
+use crate::lexer::{tokenize, LexError, SpannedToken, Token};
 
 /// Parser error types.
 #[derive(Debug, thiserror::Error)]
@@ -37,7 +37,8 @@ impl Parser {
     }
 
     fn advance(&mut self) -> &Token {
-        let token = self.tokens
+        let token = self
+            .tokens
             .get(self.pos)
             .map(|t| &t.token)
             .unwrap_or(&Token::Eof);
@@ -252,6 +253,10 @@ impl Parser {
                 self.expect(&Token::RBracket)?;
                 Ok(Expr::Array(items))
             }
+            Token::Star => {
+                self.advance();
+                Ok(Expr::Everything)
+            }
             Token::Eof => Err(ParseError::UnexpectedEof),
             other => Err(ParseError::UnexpectedToken {
                 found: format!("{other:?}"),
@@ -349,7 +354,9 @@ mod tests {
                     Expr::Filter(inner) => match inner.as_ref() {
                         Expr::Eq(left, right) => {
                             assert!(matches!(left.as_ref(), Expr::Ident(n) if n == "_type"));
-                            assert!(matches!(right.as_ref(), Expr::StringLiteral(s) if s == "post"));
+                            assert!(
+                                matches!(right.as_ref(), Expr::StringLiteral(s) if s == "post")
+                            );
                         }
                         _ => panic!("expected Eq"),
                     },

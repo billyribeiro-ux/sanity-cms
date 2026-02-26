@@ -20,7 +20,10 @@ impl EventBus {
     }
 
     /// Publish an event to all current subscribers.
-    pub fn publish(&self, event: ContentLakeEvent) -> Result<usize, broadcast::error::SendError<ContentLakeEvent>> {
+    pub fn publish(
+        &self,
+        event: ContentLakeEvent,
+    ) -> Result<usize, broadcast::error::SendError<ContentLakeEvent>> {
         self.sender.send(event)
     }
 
@@ -66,7 +69,13 @@ mod tests {
 
         bus.publish(ContentLakeEvent::Reconnect).unwrap();
 
-        assert!(matches!(rx1.recv().await.unwrap(), ContentLakeEvent::Reconnect));
-        assert!(matches!(rx2.recv().await.unwrap(), ContentLakeEvent::Reconnect));
+        assert!(matches!(
+            rx1.recv().await.unwrap(),
+            ContentLakeEvent::Reconnect
+        ));
+        assert!(matches!(
+            rx2.recv().await.unwrap(),
+            ContentLakeEvent::Reconnect
+        ));
     }
 }

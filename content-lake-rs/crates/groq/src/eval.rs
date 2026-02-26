@@ -1,8 +1,8 @@
 // GROQ in-memory evaluator (for grant filter evaluation).
 // Will be fully implemented in Phase 2.
 
-use serde_json::Value;
 use crate::ast::Expr;
+use serde_json::Value;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EvalError {
@@ -43,15 +43,13 @@ pub fn eval_expr(expr: &Expr, doc: &Value, params: &Value) -> Result<Value, Eval
             let rv = eval_expr(r, doc, params)?;
             Ok(Value::Bool(lv != rv))
         }
-        Expr::And(l, r) => {
-            Ok(Value::Bool(eval_filter(l, doc, params)? && eval_filter(r, doc, params)?))
-        }
-        Expr::Or(l, r) => {
-            Ok(Value::Bool(eval_filter(l, doc, params)? || eval_filter(r, doc, params)?))
-        }
-        Expr::Not(inner) => {
-            Ok(Value::Bool(!eval_filter(inner, doc, params)?))
-        }
+        Expr::And(l, r) => Ok(Value::Bool(
+            eval_filter(l, doc, params)? && eval_filter(r, doc, params)?,
+        )),
+        Expr::Or(l, r) => Ok(Value::Bool(
+            eval_filter(l, doc, params)? || eval_filter(r, doc, params)?,
+        )),
+        Expr::Not(inner) => Ok(Value::Bool(!eval_filter(inner, doc, params)?)),
         _ => Err(EvalError::Unsupported),
     }
 }

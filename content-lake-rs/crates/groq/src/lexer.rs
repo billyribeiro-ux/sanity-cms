@@ -20,63 +20,63 @@ pub enum Token {
     Ident(String),
 
     /// The equality operator.
-    Eq,         // ==
+    Eq, // ==
     /// The inequality operator.
-    Neq,        // !=
+    Neq, // !=
     /// The less-than operator.
-    Lt,         // <
+    Lt, // <
     /// The greater-than operator.
-    Gt,         // >
+    Gt, // >
     /// The less-than-or-equal operator.
-    Lte,        // <=
+    Lte, // <=
     /// The greater-than-or-equal operator.
-    Gte,        // >=
+    Gte, // >=
     /// The logical and operator.
-    And,        // &&
+    And, // &&
     /// The logical or operator.
-    Or,         // ||
+    Or, // ||
     /// The logical not operator.
-    Not,        // !
+    Not, // !
     /// The match keyword.
-    Match,      // match
+    Match, // match
     /// The in keyword.
-    In,         // in
+    In, // in
     /// The asc keyword.
-    Asc,        // asc
+    Asc, // asc
     /// The desc keyword.
-    Desc,       // desc
+    Desc, // desc
 
     /// The asterisk operator.
-    Star,       // *
+    Star, // *
     /// The dot operator.
-    Dot,        // .
+    Dot, // .
     /// The comma operator.
-    Comma,      // ,
+    Comma, // ,
     /// The colon operator.
-    Colon,      // :
+    Colon, // :
     /// The pipe operator.
-    Pipe,       // |
+    Pipe, // |
     /// The arrow operator.
-    Arrow,      // ->
+    Arrow, // ->
     /// The at symbol.
-    At,         // @
+    At, // @
     /// The caret operator.
-    Caret,      // ^
+    Caret, // ^
     /// The ellipsis operator.
-    Ellipsis,   // ...
+    Ellipsis, // ...
 
     /// The left parenthesis.
-    LParen,     // (
+    LParen, // (
     /// The right parenthesis.
-    RParen,     // )
+    RParen, // )
     /// The left bracket.
-    LBracket,   // [
+    LBracket, // [
     /// The right bracket.
-    RBracket,   // ]
+    RBracket, // ]
     /// The left brace.
-    LBrace,     // {
+    LBrace, // {
     /// The right brace.
-    RBrace,     // }
+    RBrace, // }
 
     /// The end of the input.
     Eof,
@@ -148,7 +148,10 @@ pub fn tokenize(input: &str) -> Result<Vec<SpannedToken>, LexError> {
         let start = pos;
 
         let token = match ch {
-            '*' => { pos += 1; Token::Star }
+            '*' => {
+                pos += 1;
+                Token::Star
+            }
             '.' => {
                 if pos + 2 < chars.len() && chars[pos + 1] == '.' && chars[pos + 2] == '.' {
                     pos += 3;
@@ -158,16 +161,46 @@ pub fn tokenize(input: &str) -> Result<Vec<SpannedToken>, LexError> {
                     Token::Dot
                 }
             }
-            ',' => { pos += 1; Token::Comma }
-            ':' => { pos += 1; Token::Colon }
-            '@' => { pos += 1; Token::At }
-            '^' => { pos += 1; Token::Caret }
-            '(' => { pos += 1; Token::LParen }
-            ')' => { pos += 1; Token::RParen }
-            '[' => { pos += 1; Token::LBracket }
-            ']' => { pos += 1; Token::RBracket }
-            '{' => { pos += 1; Token::LBrace }
-            '}' => { pos += 1; Token::RBrace }
+            ',' => {
+                pos += 1;
+                Token::Comma
+            }
+            ':' => {
+                pos += 1;
+                Token::Colon
+            }
+            '@' => {
+                pos += 1;
+                Token::At
+            }
+            '^' => {
+                pos += 1;
+                Token::Caret
+            }
+            '(' => {
+                pos += 1;
+                Token::LParen
+            }
+            ')' => {
+                pos += 1;
+                Token::RParen
+            }
+            '[' => {
+                pos += 1;
+                Token::LBracket
+            }
+            ']' => {
+                pos += 1;
+                Token::RBracket
+            }
+            '{' => {
+                pos += 1;
+                Token::LBrace
+            }
+            '}' => {
+                pos += 1;
+                Token::RBrace
+            }
             '=' => {
                 if pos + 1 < chars.len() && chars[pos + 1] == '=' {
                     pos += 2;
@@ -308,7 +341,10 @@ pub fn tokenize(input: &str) -> Result<Vec<SpannedToken>, LexError> {
 
     tokens.push(SpannedToken {
         token: Token::Eof,
-        span: Span { start: pos, end: pos },
+        span: Span {
+            start: pos,
+            end: pos,
+        },
     });
 
     Ok(tokens)
@@ -319,7 +355,11 @@ mod tests {
     use super::*;
 
     fn tok(input: &str) -> Vec<Token> {
-        tokenize(input).unwrap().into_iter().map(|t| t.token).collect()
+        tokenize(input)
+            .unwrap()
+            .into_iter()
+            .map(|t| t.token)
+            .collect()
     }
 
     #[test]
