@@ -1,0 +1,152 @@
+/* eslint-disable no-loop-func */
+
+import {type Path, type SanityDocument, type SchemaType} from '@sanity/types'
+import {isArray, isRecord} from 'sanity'
+
+// eslint-disable-next-line max-statements
+export function getPathTitles(options: {
+  path: Path
+  schemaType: SchemaType
+  value: Partial<SanityDocument> | null
+}): Array<{name: string; title?: string}> {
+  const {path, schemaType, value} = options
+  const result: Array<{name: string; title?: string}> = []
+
+  let s = schemaType
+  let v: unknown = value
+
+  for (const segment of path) {
+    // field name
+    if (typeof segment === 'string') {
+      if (!isRecord(v) && v !== undefined) {
+        throw new Error(`Parent value is not an object, cannot get path segment: .${segment}`)
+      }
+
+      if (s.jsonType !== 'object') {
+        throw new Error(
+          `Parent type is not an object schema type, cannot get path segment: .${segment}`,
+        )
+      }
+
+      v = v?.[segment]
+
+      const field = s.fields.find((f) => f.name === segment)
+
+      if (!field) {
+        result.push({name: segment})
+        return result
+      }
+
+      s = field.type
+
+      result.push(s)
+
+      continue
+    }
+
+    // array item index
+    if (typeof segment === 'number') {
+      if (!isArray(v) && v !== undefined) {
+        throw new Error(`Parent value is not an array, cannot get path segment: [${segment}]`)
+      }
+
+      if (s.jsonType !== 'array') {
+        throw new Error(
+          `Parent type is not an array schema type, cannot get path segment: [${segment}]`,
+        )
+      }
+
+      v = v?.[segment]
+
+      const itemType = s.of.find((ofType) => {
+        if (typeof v === 'string') {
+          return ofType.jsonType === 'string'
+        }
+
+        if (typeof v === 'number') {
+          return ofType.jsonType === 'number'
+        }
+
+        if (typeof v === 'boolean') {
+          return ofType.jsonType === 'boolean'
+        }
+
+        if (isRecord(v)) {
+          return ofType.name === v?._type
+        }
+
+        return false
+      })
+
+      if (!itemType) {
+        throw new Error(`Item type not found: [${segment}]`)
+      }
+
+      s = itemType
+
+      result.push(s)
+
+      continue
+    }
+
+    // array item key
+    if (isRecord(segment) && segment._key) {
+      // if the value is undefined, it likely means that is has been deleted, so return the result
+      if (typeof v === 'undefined') {
+        return result
+      }
+
+      if (!isArray(v)) {
+        throw new Error(
+          `Parent value is not an array, cannot get path segment: [_key == ${segment}]`,
+        )
+      }
+
+      if (s.jsonType !== 'array') {
+        throw new Error(
+          `Parent type is not an array schema type, cannot get path segment: .${segment}`,
+        )
+      }
+
+      const values = v ?? []
+
+      v = values.find((i) => isRecord(i) && i._key === segment._key)
+
+      // in situations where the segment key exists but it could not be found in the values array
+      // means that the specific item has been deleted from the array
+      // and therefore we not need to continue running the validation for it
+      if (typeof v === 'undefined') {
+        return result
+      }
+
+      if (!isRecord(v)) {
+        throw new Error(`Array item not found: [_key == ${segment._key}]`)
+      }
+
+      // Try to find the type by _type property first
+      let ofType = s.of.find((i) => isRecord(v) && i.name === v?._type)
+
+      // If _type is not set (anonymous object), and there's only one object type, use it
+      if (!ofType && !v?._type) {
+        const objectTypes = s.of.filter((i) => i.jsonType === 'object')
+        if (objectTypes.length === 1) {
+          ofType = objectTypes[0]
+        }
+      }
+
+      if (!ofType) {
+        throw new Error(`Array item type not found: .${v?._type}`)
+      }
+
+      s = ofType
+
+      result.push(s)
+
+      continue
+    }
+
+    throw new Error(`Invalid path segment: ${JSON.stringify(segment)}`)
+  }
+
+  return result
+}

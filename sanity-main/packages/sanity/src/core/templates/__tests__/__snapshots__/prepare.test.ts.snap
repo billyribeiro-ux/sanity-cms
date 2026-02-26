@@ -1,0 +1,59 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`getTemplates > returns defaults if part is not implemented 1`] = `
+[
+  {
+    "icon": [Function],
+    "id": "author",
+    "schemaType": "author",
+    "title": "Author",
+    "value": [Function],
+  },
+  {
+    "icon": [Function],
+    "id": "person",
+    "schemaType": "person",
+    "title": "Person",
+    "value": {
+      "_type": "person",
+    },
+  },
+  {
+    "icon": [Function],
+    "id": "post",
+    "schemaType": "post",
+    "title": "Post",
+    "value": {
+      "_type": "post",
+    },
+  },
+  {
+    "icon": undefined,
+    "id": "developer",
+    "schemaType": "developer",
+    "title": "Developer",
+    "value": [Function],
+  },
+]
+`;
+
+exports[`getTemplates > returns defined templates if part implemented 1`] = `
+[
+  {
+    "id": "author",
+    "schemaType": "author",
+    "title": "Author",
+    "value": {
+      "title": "here",
+    },
+  },
+  {
+    "id": "developer",
+    "schemaType": "developer",
+    "title": "Developer",
+    "value": {
+      "title": "Foo",
+    },
+  },
+]
+`;

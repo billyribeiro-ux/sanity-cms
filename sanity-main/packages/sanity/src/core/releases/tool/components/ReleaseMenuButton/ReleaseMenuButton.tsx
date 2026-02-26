@@ -1,0 +1,377 @@
+import {type ReleaseDocument, type SingleActionResult} from '@sanity/client'
+import {EllipsisHorizontalIcon} from '@sanity/icons'
+import {useTelemetry} from '@sanity/telemetry/react'
+import {Menu, MenuDivider, Spinner, Stack, Text, useClickOutsideEvent, useToast} from '@sanity/ui'
+import {type SetStateAction, useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {RouterContext, useRouter} from 'sanity/router'
+
+import {Button, Dialog, MenuItem, Popover} from '../../../../../ui-components'
+import {type ReleaseActionDescription} from '../../../../config/releases/actions'
+import {Translate, type TranslateComponentMap, useTranslation} from '../../../../i18n'
+import {usePerspective} from '../../../../perspective/usePerspective'
+import {useSetPerspective} from '../../../../perspective/useSetPerspective'
+import {useWorkspace} from '../../../../studio/workspace'
+import {ReleaseActionsResolver} from '../../../components/ReleaseActionsResolver'
+import {useReleasesUpsell} from '../../../contexts/upsell/useReleasesUpsell'
+import {useCustomReleaseActions} from '../../../hooks/useCustomReleaseActions'
+import {releasesLocaleNamespace} from '../../../i18n'
+import {isReleaseLimitError} from '../../../store/isReleaseLimitError'
+import {useReleaseOperations} from '../../../store/useReleaseOperations'
+import {createReleaseId} from '../../../util/createReleaseId'
+import {getReleaseIdFromReleaseDocumentId} from '../../../util/getReleaseIdFromReleaseDocumentId'
+import {type DocumentInRelease} from '../../detail/useBundleDocuments'
+import {DuplicateReleaseToastLink} from './DuplicateReleaseToastLink'
+import {RELEASE_ACTION_MAP, type ReleaseAction} from './releaseActions'
+import {ReleaseMenu} from './ReleaseMenu'
+import {ReleasePreviewCard} from './ReleasePreviewCard'
+
+export type ActionResult =
+  | false
+  | void
+  | SingleActionResult
+  | {
+      releaseId: string
+    }
+
+const toastActionComponents: Partial<
+  Record<ReleaseAction, (actionResult: ActionResult) => TranslateComponentMap>
+> = {
+  duplicate: (actionResult) => ({
+    Link: () => <DuplicateReleaseToastLink actionResult={actionResult} />,
+  }),
+}
+
+export type ReleaseMenuButtonProps = {
+  /** defaults to false
+   * set true if release primary CTA options should not
+   * be shown in the menu eg. unschedule, publish
+   */
+  ignoreCTA?: boolean
+  release: ReleaseDocument
+  documentsCount: number
+  documents?: DocumentInRelease[]
+}
+
+export const ReleaseMenuButton = ({
+  ignoreCTA,
+  release,
+  documentsCount,
+  documents,
+}: ReleaseMenuButtonProps) => {
+  const toast = useToast()
+  const router = useRouter()
+  const {archive, unarchive, deleteRelease, unschedule, duplicateRelease} = useReleaseOperations()
+
+  const [isPerformingOperation, setIsPerformingOperation] = useState(false)
+  const [selectedAction, setSelectedAction] = useState<ReleaseAction>()
+  const {selectedReleaseId} = usePerspective()
+  const setPerspective = useSetPerspective()
+
+  const popoverRef = useRef<HTMLDivElement | null>(null)
+  const releaseMenuRef = useRef<HTMLDivElement | null>(null)
+  const [openPopover, setOpenPopover] = useState(false)
+
+  const customActions = useCustomReleaseActions(release, documents ?? [])
+  const [customActionDescriptions, setCustomActionDescriptions] = useState<
+    ReleaseActionDescription[]
+  >([])
+
+  const handleCustomActionsUpdate = useCallback(
+    (actions: Array<ReleaseActionDescription | null>) => {
+      setCustomActionDescriptions(actions.filter(Boolean) as ReleaseActionDescription[])
+    },
+    [],
+  )
+
+  const releaseMenuDisabled = !release
+  const {t} = useTranslation(releasesLocaleNamespace)
+  const {t: tCore} = useTranslation()
+  const telemetry = useTelemetry()
+  const {guardWithReleaseLimitUpsell} = useReleasesUpsell()
+  const releaseTitle = release.metadata.title || tCore('release.placeholder-untitled-release')
+  const isActionPublishOrSchedule = selectedAction === 'publish' || selectedAction === 'schedule'
+  const {document} = useWorkspace()
+  const {
+    drafts: {enabled: isDraftModelEnabled},
+  } = document
+
+  const handleDelete = useCallback(async () => {
+    await deleteRelease(release._id)
+
+    // return to release overview list now that release is deleted
+    router.navigate({})
+  }, [deleteRelease, release._id, router])
+
+  const handleUnarchive = useCallback(async () => {
+    return guardWithReleaseLimitUpsell(() => unarchive(release._id), true)
+  }, [guardWithReleaseLimitUpsell, release._id, unarchive])
+
+  const handleDuplicate = useCallback(async () => {
+    const duplicateReleaseId = createReleaseId()
+
+    await guardWithReleaseLimitUpsell(async () => {
+      const releaseDocuments = documents?.map((doc) => doc.document)
+      const duplicatedMetadata = {
+        ...release.metadata,
+        title: `${release.metadata.title} (${t('copy-suffix')})`,
+      }
+      return duplicateRelease(duplicateReleaseId, duplicatedMetadata, releaseDocuments)
+    }, true)
+
+    return {releaseId: duplicateReleaseId}
+  }, [guardWithReleaseLimitUpsell, duplicateRelease, documents, release.metadata, t])
+
+  const handleAction = useCallback(
+    async (action: ReleaseAction) => {
+      if (action === 'publish' || action === 'schedule') return
+      if (releaseMenuDisabled) return
+
+      const actionLookup = {
+        delete: handleDelete,
+        archive,
+        unarchive: handleUnarchive,
+        unschedule,
+        duplicate: handleDuplicate,
+      }
+      const actionValues = RELEASE_ACTION_MAP[action]
+
+      // The .catch/.finally syntax instead of try/catch/finally is because of the React Compiler not fully supporting the syntax yet
+      const run = async () => {
+        if (
+          (action === 'archive' || action === 'delete') &&
+          selectedReleaseId === getReleaseIdFromReleaseDocumentId(release._id)
+        ) {
+          // Reset the perspective to drafts when the release is archived or deleted
+          // To avoid showing the release archived / deleted toast.
+          setPerspective(isDraftModelEnabled ? 'drafts' : 'published')
+        }
+        setIsPerformingOperation(true)
+        const actionResult = await actionLookup[action](release._id)
+
+        telemetry.log(actionValues.telemetry)
+
+        if (typeof actionValues.toastSuccessI18nKey !== 'undefined') {
+          const toastComponents = toastActionComponents[action]?.(actionResult)
+
+          toast.push({
+            closable: true,
+            status: 'success',
+            title: (
+              // toast children need access to the router
+              <RouterContext.Provider value={router}>
+                <Text muted size={1}>
+                  <Translate
+                    t={t}
+                    components={toastComponents}
+                    i18nKey={actionValues.toastSuccessI18nKey}
+                    values={{title: releaseTitle}}
+                  />
+                </Text>
+              </RouterContext.Provider>
+            ),
+          })
+        }
+      }
+      await run()
+        .catch((actionError) => {
+          if (isReleaseLimitError(actionError)) return
+
+          if (typeof actionValues.toastFailureI18nKey !== 'undefined') {
+            toast.push({
+              status: 'error',
+              title: (
+                <Text muted size={1}>
+                  <Translate
+                    t={t}
+                    i18nKey={actionValues.toastFailureI18nKey}
+                    values={{title: releaseTitle, error: actionError.toString()}}
+                  />
+                </Text>
+              ),
+            })
+          }
+          console.error(actionError)
+        })
+        .finally(() => {
+          setIsPerformingOperation(false)
+          setSelectedAction(undefined)
+        })
+    },
+    [
+      releaseMenuDisabled,
+      handleDelete,
+      archive,
+      handleUnarchive,
+      unschedule,
+      handleDuplicate,
+      selectedReleaseId,
+      release._id,
+      telemetry,
+      setPerspective,
+      isDraftModelEnabled,
+      toast,
+      router,
+      t,
+      releaseTitle,
+    ],
+  )
+
+  /** in some instances, immediately execute the action without requiring confirmation */
+  useEffect(() => {
+    if (!selectedAction || isActionPublishOrSchedule) return
+
+    if (!RELEASE_ACTION_MAP[selectedAction].confirmDialog) void handleAction(selectedAction)
+  }, [documentsCount, handleAction, isActionPublishOrSchedule, selectedAction])
+
+  const confirmActionDialog = useMemo(() => {
+    if (!selectedAction || isActionPublishOrSchedule) return null
+
+    const {confirmDialog} = RELEASE_ACTION_MAP[selectedAction]
+
+    if (!confirmDialog) return null
+
+    return (
+      <Dialog
+        id={confirmDialog.dialogId}
+        data-testid={confirmDialog.dialogId}
+        header={t(confirmDialog.dialogHeaderI18nKey)}
+        onClose={() => !isPerformingOperation && setSelectedAction(undefined)}
+        padding={false}
+        footer={{
+          confirmButton: {
+            text: t(confirmDialog.dialogConfirmButtonI18nKey),
+            tone: confirmDialog.confirmButtonTone,
+            onClick: () => handleAction(selectedAction),
+            loading: isPerformingOperation,
+            disabled: isPerformingOperation,
+          },
+          cancelButton: {
+            disabled: isPerformingOperation,
+          },
+        }}
+      >
+        <Stack space={4} paddingX={4} paddingBottom={4}>
+          <ReleasePreviewCard release={release} />
+          {!!documentsCount && (
+            <Text muted size={1}>
+              <Translate
+                t={t}
+                i18nKey={confirmDialog.dialogDescriptionI18nKey}
+                values={{
+                  count: documentsCount,
+                }}
+              />
+            </Text>
+          )}
+        </Stack>
+      </Dialog>
+    )
+  }, [
+    selectedAction,
+    isActionPublishOrSchedule,
+    t,
+    isPerformingOperation,
+    release,
+    documentsCount,
+    handleAction,
+  ])
+
+  const closePopover = useCallback(() => {
+    setOpenPopover(false)
+  }, [])
+
+  const handleOnButtonClick = useCallback(() => {
+    if (openPopover) closePopover()
+    else setOpenPopover(true)
+  }, [closePopover, openPopover])
+
+  useClickOutsideEvent(
+    () => {
+      if (!isActionPublishOrSchedule) {
+        closePopover()
+      }
+    },
+    () => [popoverRef.current, releaseMenuRef.current],
+  )
+
+  const handleSetSelectedAction = useCallback(
+    (action: SetStateAction<ReleaseAction | undefined>) => {
+      if (!action) closePopover()
+      setSelectedAction(action)
+    },
+    [closePopover],
+  )
+
+  // Create menu items for custom actions
+  const customActionMenuItems = useMemo(() => {
+    const handleOnActionClick = (action: ReleaseActionDescription) => () => {
+      if (action.onHandle) {
+        action.onHandle()
+        closePopover()
+      }
+    }
+
+    return customActionDescriptions.map((action, index) => (
+      <MenuItem
+        key={`custom-action-${index}`}
+        icon={action.icon}
+        text={action.label}
+        disabled={action.disabled || isPerformingOperation}
+        onClick={handleOnActionClick(action)}
+        tooltipProps={action.title ? {content: action.title} : undefined}
+      />
+    ))
+  }, [customActionDescriptions, isPerformingOperation, closePopover])
+
+  const hasCustomActions = customActions.length > 0
+
+  return (
+    <>
+      {hasCustomActions && (
+        <ReleaseActionsResolver
+          actions={customActions}
+          release={release}
+          documents={documents ?? []}
+          onActions={handleCustomActionsUpdate}
+        />
+      )}
+      <Popover
+        content={
+          <Menu ref={releaseMenuRef}>
+            <ReleaseMenu
+              ignoreCTA={ignoreCTA}
+              release={release}
+              setSelectedAction={handleSetSelectedAction}
+              disabled={isPerformingOperation}
+              documents={documents ?? []}
+            />
+            {hasCustomActions && (
+              <>
+                <MenuDivider />
+                {customActionMenuItems}
+              </>
+            )}
+          </Menu>
+        }
+        open={openPopover}
+        ref={popoverRef}
+        constrainSize={false}
+        fallbackPlacements={['top-end']}
+        portal
+        tone="default"
+        placement="bottom"
+      >
+        <Button
+          disabled={releaseMenuDisabled || isPerformingOperation}
+          icon={isPerformingOperation ? Spinner : EllipsisHorizontalIcon}
+          mode="bleed"
+          tooltipProps={{content: t('menu.tooltip')}}
+          aria-label={t('menu.label')}
+          data-testid="release-menu-button"
+          onClick={handleOnButtonClick}
+        />
+      </Popover>
+      {confirmActionDialog}
+    </>
+  )
+}

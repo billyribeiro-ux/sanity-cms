@@ -1,0 +1,747 @@
+import {ImageIcon, OlistIcon} from '@sanity/icons'
+import {defineArrayMember, defineField, defineType} from 'sanity'
+
+export const topLevelArrayType = defineType({
+  name: 'topLevelArrayType',
+  type: 'array',
+  of: [
+    {
+      type: 'object',
+      title: 'Content',
+      fields: [
+        {name: 'textContent', type: 'text'},
+        {name: 'imageContent', type: 'image'},
+      ],
+      preview: {select: {title: 'textContent'}},
+    },
+  ],
+})
+
+export const topLevelPrimitiveArrayType = defineType({
+  name: 'topLevelPrimitiveArrayType',
+  type: 'array',
+  of: [
+    {
+      type: 'string',
+      title: 'A string',
+    },
+    {
+      type: 'number',
+      title: 'A number',
+    },
+  ],
+})
+
+const predefinedStringArray = defineField({
+  name: 'predefinedStringArray',
+  title: 'Array of strings',
+  description: 'First field in object is string with list options',
+  type: 'array',
+  of: [{type: 'string'}],
+  options: {
+    list: [{title: 'Cats', value: 'cats4ever'}, {title: 'Dogs', value: 'dogs4ever'}, 'Horses'],
+  },
+})
+
+export default defineType({
+  name: 'arraysTest',
+  type: 'document',
+  title: 'Arrays test',
+  icon: OlistIcon,
+  fields: [
+    {
+      name: 'title',
+      title: 'Title',
+      type: 'string',
+    },
+    // Example demonstrating schema validation error for issue #3631
+    // This array contains multiple types that resolve to JSON type "string"
+    // which is not allowed because there's no way to distinguish between them
+    {
+      name: 'duplicatePrimitiveJsonTypeExample',
+      title: 'Duplicate Primitive JSON Type Example (Issue #3631)',
+      description:
+        'This field demonstrates the validation error when an array contains multiple types that resolve to the same JSON primitive type',
+      type: 'array',
+      of: [
+        {type: 'string', name: 'heading', title: 'Heading'},
+        {type: 'text', name: 'paragraph', title: 'Paragraph'},
+      ],
+    },
+    {
+      name: 'arrayOfReferences',
+      title: 'Array of references to authors',
+      type: 'array',
+      of: [{type: 'reference', to: [{type: 'author'}]}],
+    },
+    predefinedStringArray,
+    defineField({
+      name: 'inlineEditingArray',
+      title: 'Inline Editing Array',
+      type: 'array',
+      of: [
+        defineArrayMember({
+          name: 'itemWithInlineEditing',
+          title: 'Item with Inline Editing',
+          type: 'object',
+
+          fields: [
+            defineField({
+              name: 'title',
+              title: 'Title',
+              type: 'string',
+            }),
+            defineField({
+              name: 'description',
+              type: 'string',
+            }),
+            defineField({
+              name: 'level2array',
+              title: 'Level 2 Array',
+              type: 'array',
+              of: [
+                defineArrayMember({
+                  name: 'level2item',
+                  title: 'Level 2 Item',
+                  type: 'object',
+                  fields: [
+                    defineField({
+                      name: 'title',
+                      type: 'string',
+                    }),
+                    defineField({
+                      name: 'description',
+                      type: 'string',
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+          preview: {
+            select: {
+              title: 'title',
+              description: 'description',
+              level2array: 'level2array',
+            },
+            prepare({title, description, level2array}) {
+              return {
+                title: title,
+                subtitle: description,
+              }
+            },
+          },
+        }),
+      ],
+    }),
+
+    {
+      name: 'objectArrayWithPrefinedStringField',
+      title: 'Array of objects',
+      description: 'First field in object is string with list options',
+      type: 'array',
+      of: [
+        {
+          name: 'item',
+          title: 'Item',
+          type: 'object',
+          groups: [
+            {
+              name: 'a',
+              title: 'A (default)',
+              default: true,
+            },
+            {
+              name: 'b',
+              title: 'B',
+            },
+            {
+              name: 'c',
+              title: 'C',
+            },
+          ],
+          fields: [
+            {
+              name: 'fieldA',
+              title: 'field A',
+              type: 'string',
+              group: ['a'],
+            },
+            {
+              name: 'fieldB',
+              title: 'field B',
+              type: 'string',
+              group: ['b'],
+            },
+            {
+              name: 'fieldC',
+              title: 'field C',
+              type: 'string',
+              group: ['c'],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'arrayOfDescriptionObjects',
+      description:
+        'This array contains objects with a `description` field, to test copying between unnamed arrays',
+      type: 'array',
+      of: [
+        {
+          title: 'Has description',
+          type: 'object',
+          fields: [{name: 'description', title: 'Description', type: 'string'}],
+        },
+      ],
+    },
+    {
+      name: 'namedAndAnonymousObjects',
+      type: 'array',
+      of: [
+        {
+          title: 'Named object',
+          type: 'object',
+          name: 'namedObject',
+          fields: [{name: 'title', type: 'string'}],
+        },
+        {
+          title: 'Anonymous object',
+          type: 'object',
+          fields: [{name: 'title', type: 'string'}],
+        },
+      ],
+    },
+    {
+      name: 'arrayWithNoTitle',
+      title: 'Array with no title',
+      type: 'array',
+      components: {
+        field: (props: any) => {
+          return (
+            <div style={{border: '1px solid palegreen', borderRadius: 4}}>
+              {props.renderDefault({
+                ...props,
+                title: undefined,
+              })}
+            </div>
+          )
+        },
+      },
+      of: [
+        {
+          type: 'object',
+          name: 'obj',
+          title: 'Some object',
+          fields: [
+            {
+              name: 'title',
+              type: 'string',
+            },
+            {
+              name: 'description',
+              type: 'string',
+            },
+          ],
+        },
+      ],
+    },
+    defineField({
+      name: 'arrayOfMultipleTypes',
+      title: 'Array of multiple types',
+      type: 'array',
+      of: [
+        {
+          type: 'image',
+          icon: ImageIcon,
+        },
+        {
+          type: 'book',
+        },
+        defineArrayMember({
+          type: 'object',
+          name: 'color',
+          title: 'Color with a long title',
+          preview: {
+            select: {
+              title: 'title',
+              subtitle: 'name',
+            },
+          },
+          fields: [
+            {
+              name: 'title',
+              type: 'string',
+            },
+            {
+              name: 'name',
+              type: 'string',
+            },
+            defineField({
+              name: 'nestedArray',
+              title: 'Nested array',
+              type: 'array',
+              of: [
+                defineArrayMember({
+                  type: 'object',
+                  name: 'color',
+                  title: 'Color with a long title',
+                  fields: [
+                    {
+                      name: 'title',
+                      type: 'string',
+                    },
+                    {
+                      name: 'name',
+                      type: 'string',
+                    },
+                  ],
+                }),
+              ],
+            }),
+          ],
+        }),
+      ],
+    }),
+    {
+      name: 'arrayOfMultipleTypesPopover',
+      title: 'Array of multiple types (modal.type=popover)',
+      options: {
+        modal: {type: 'popover'},
+      },
+      type: 'array',
+      of: [
+        {
+          type: 'image',
+          icon: ImageIcon,
+        },
+        {
+          type: 'book',
+        },
+        {
+          type: 'object',
+          name: 'color',
+          title: 'Color with a long title',
+          fields: [
+            {
+              name: 'title',
+              type: 'string',
+            },
+            {
+              name: 'name',
+              type: 'string',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'arrayOfMultipleTypesFullscreen',
+      title: 'Array of multiple types (modal.type=fullscreen)',
+      options: {
+        modal: {type: 'dialog', width: 'auto'},
+      },
+      type: 'array',
+      of: [
+        {
+          type: 'image',
+          icon: ImageIcon,
+        },
+        {
+          type: 'book',
+        },
+        {
+          type: 'object',
+          name: 'color',
+          title: 'Color with a long title',
+          fields: [
+            {
+              name: 'title',
+              type: 'string',
+            },
+            {
+              name: 'name',
+              type: 'string',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'arrayOfMultipleTypesFold',
+      title: 'Array of multiple types (modal.type=popover)',
+      options: {
+        modal: {type: 'popover'},
+      },
+      type: 'array',
+      of: [
+        {
+          type: 'image',
+          icon: ImageIcon,
+        },
+        {
+          type: 'book',
+        },
+        {
+          type: 'object',
+          name: 'color',
+          title: 'Color with a long title',
+          fields: [
+            {
+              name: 'title',
+              type: 'string',
+            },
+            {
+              name: 'name',
+              type: 'string',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'arrayOfPredefinedOptions',
+      title: 'Array of predefined options',
+      description: [
+        'It should be possible to check/uncheck the different options.',
+        'There should be a warning about invalid type (number)',
+        'When inspecting a document with checked values, the array should contain values with: ',
+        '{_type: "color", ...}',
+      ].join('\n'),
+      type: 'array',
+      of: [
+        {
+          type: 'object',
+          name: 'color',
+          fields: [
+            {
+              name: 'title',
+              type: 'string',
+            },
+            {
+              name: 'name',
+              type: 'string',
+            },
+          ],
+          preview: {
+            select: {
+              title: 'title',
+              name: 'name',
+            },
+            prepare({title, name}) {
+              return {
+                title: title,
+                media: () => (
+                  <div
+                    style={{
+                      backgroundColor: name,
+                      position: 'absolute',
+                      height: '100%',
+                      width: '100%',
+                      top: '0',
+                      left: '0',
+                    }}
+                  />
+                ),
+              }
+            },
+          },
+        },
+      ],
+      options: {
+        layout: 'grid',
+        list: [
+          {_type: 'color', title: 'Red', name: 'red'},
+          {_type: 'color', title: 'Green', name: 'green', _key: 'green'},
+          // 1, // invalid, not defined in list (note: this is now captured by the schema parsing step)
+          {_type: 'color', title: 'Blue', name: 'blue', _key: 'blue'},
+          {_type: 'color', title: 'Black', name: 'black', _key: 'black'},
+        ],
+      },
+    },
+    {
+      name: 'tags',
+      title: 'Tags',
+      description:
+        'Enter a tag and press enter. Should result in an array of strings and should be possible to remove items',
+      type: 'array',
+      options: {layout: 'tags'},
+      of: [{type: 'string'}],
+    },
+    {
+      name: 'arrayWithAnonymousObject',
+      title: 'Array with anonymous objects',
+      description: 'This array contains objects of type as defined inline',
+      type: 'array',
+      of: [
+        {
+          type: 'object',
+          title: 'Something',
+          fields: [
+            {name: 'first', type: 'string', title: 'First string'},
+            {name: 'second', type: 'string', title: 'Second string'},
+          ],
+        },
+      ],
+    },
+    defineField({
+      name: 'arrayOfStrings',
+      title: 'Array of strings',
+      description: 'This array contains only strings, with no title',
+      type: 'array',
+      of: [{type: 'string', validation: (Rule) => Rule.required().min(10).max(80)}],
+    }),
+    {
+      name: 'arrayOfPrimitives',
+      title: 'Array with primitive types',
+      description: 'This array contains only strings, values and booleans',
+      type: 'array',
+      of: [
+        {
+          type: 'string',
+          title: 'String',
+        },
+        {
+          type: 'boolean',
+          title: 'Boolean',
+        },
+      ],
+    },
+    {
+      name: 'arrayOfEmails',
+      title: 'Array of email addresses',
+      description: 'This array contains only email addresses',
+      type: 'array',
+      of: [
+        {
+          type: 'email',
+          title: '',
+        },
+      ],
+    },
+    {
+      name: 'arrayOfStringsWithLegacyList',
+      title: 'Array of strings with legacy format on lists',
+      description:
+        'Previously the `list` option took an array of {title, value} items. It should still be possible to check these values.',
+      type: 'array',
+      of: [{type: 'string'}],
+      options: {
+        list: [
+          {value: 'residential', title: 'Residential'},
+          {value: 'education', title: 'Education'},
+          {value: 'commercial', title: 'Commercial'},
+          {value: 'cultural', title: 'Cultural'},
+          {value: 'display', title: 'Display'},
+          {value: 'installation', title: 'Installation'},
+          {value: 'objects', title: 'Objects'},
+          {value: 'performance', title: 'Performance'},
+          {value: 'public space', title: 'Public Space'},
+          {value: 'publications', title: 'Publications'},
+        ],
+      },
+    },
+    {
+      name: 'fieldOfTopLevelArrayType',
+      title: 'Field of top level array type',
+      type: 'topLevelArrayType',
+    },
+    {
+      name: 'fieldOfTopLevelPrimitiveArrayType',
+      title: 'Field of top level primitive array type',
+      type: 'topLevelPrimitiveArrayType',
+    },
+    {
+      name: 'imageArrayInGrid2',
+      title: 'Image array',
+      description: 'An array of images. options: {layout: "grid"}',
+      type: 'array',
+      options: {
+        layout: 'grid',
+      },
+      of: [
+        {
+          title: 'My Image',
+          type: 'image',
+        },
+      ],
+    },
+    {
+      name: 'imageArrayInGrid',
+      title: 'Image array',
+      description: 'An array of images. options: {layout: "grid"}',
+      type: 'array',
+      options: {
+        layout: 'grid',
+      },
+      of: [
+        {
+          name: 'myImage',
+          title: 'My Image',
+          type: 'myImage',
+        },
+      ],
+    },
+    {
+      name: 'imageArray',
+      title: 'Image array (with defaults)',
+      type: 'array',
+      of: [
+        {
+          title: 'Image',
+          type: 'image',
+          preview: {
+            select: {
+              imageUrl: 'asset.url',
+              title: 'caption',
+            },
+          },
+          fields: [
+            {
+              name: 'caption',
+              type: 'string',
+              title: 'Caption',
+              options: {
+                isHighlighted: true,
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'fileArray',
+      title: 'File array (with defaults)',
+      type: 'array',
+      of: [
+        {
+          title: 'File',
+          type: 'file',
+        },
+      ],
+    },
+    {
+      name: 'polymorphicGridArray',
+      title: 'Polymorphic grid array',
+      description: 'An array of multiple types. options: {layout: "grid"}',
+      type: 'array',
+      options: {
+        layout: 'grid',
+      },
+      of: [
+        {
+          title: 'A book',
+          type: 'book',
+        },
+        {
+          title: 'An author',
+          type: 'author',
+        },
+        {
+          title: 'Reference to author',
+          type: 'reference',
+          to: [{type: 'author'}],
+        },
+        {
+          title: 'An image',
+          type: 'image',
+        },
+      ],
+    },
+    {
+      name: 'imageArrayNotSortable',
+      title: 'Image array in grid, *not* sortable',
+      description: 'Images here should be append-only',
+      type: 'array',
+      options: {
+        sortable: false,
+        layout: 'grid',
+      },
+      of: [
+        {
+          title: 'Image',
+          type: 'image',
+          preview: {
+            select: {
+              imageUrl: 'asset.url',
+              title: 'caption',
+            },
+          },
+          fields: [
+            {
+              name: 'caption',
+              type: 'string',
+              title: 'Caption',
+              options: {
+                isHighlighted: true,
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'arrayOfNamedReferences',
+      type: 'array',
+      title: 'Array of named references',
+      description: 'The values here should get _type == authorReference or _type == bookReference',
+      of: [
+        {
+          type: 'reference',
+          name: 'authorReference',
+          to: [{type: 'author', title: 'Reference to author'}],
+        },
+        {
+          type: 'reference',
+          name: 'bookReference',
+          to: [{type: 'book', title: 'Reference to book'}],
+        },
+      ],
+    },
+    {
+      name: 'arrayOfSoManyDifferentTypes',
+      type: 'array',
+      title: 'Array of SO MANY different types',
+      description: 'Uses custom "Add" functionality',
+      of: [
+        'author',
+        'book',
+        // 'code',
+        // 'color',
+        'geopoint',
+        'image',
+        'slug',
+        'species',
+      ].map((type) => ({
+        type,
+      })),
+    },
+    defineField({
+      name: 'slugs',
+      title: 'Slugs',
+      type: 'array',
+      of: [
+        defineArrayMember({
+          type: 'slug',
+        }),
+      ],
+    }),
+    defineField({
+      name: 'slugsWithObject',
+      title: 'Slugs with object',
+      type: 'array',
+      of: [
+        defineArrayMember({
+          type: 'object',
+          fields: [
+            defineField({
+              name: 'slug',
+              type: 'slug',
+            }),
+          ],
+        }),
+      ],
+    }),
+  ],
+})

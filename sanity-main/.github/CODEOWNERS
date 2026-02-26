@@ -1,0 +1,31 @@
+# By default, assign the Studio team.
+# Later matching rules will take precedence.
+* @sanity-io/studio
+
+# For areas of responsibility, assign the specific team
+# that is responsible. It is possible to assign to individuals,
+# however it is preferable that a team is responsible for large
+# areas to improve maintainablitly and availability
+
+# Releases
+/packages/sanity/src/core/releases @sanity-io/studio
+
+# -- Others --
+
+# Shopify templates
+/packages/@sanity/cli/src/actions/init-project/templates/shopify* @thebiggianthead
+/packages/@sanity/cli/templates/shopify* @thebiggianthead
+
+# Telemetry definitions
+*.telemetry.ts @sanity-io/data-eng
+
+# Code and typegeneration
+/packages/@sanity/cli/src/actions/typegen @sanity-io/content-lake-dx
+/packages/@sanity/cli/src/commands/typegen @sanity-io/content-lake-dx
+/packages/@sanity/cli/src/workers/typegenGenerate.ts @sanity-io/content-lake-dx
+
+# Presentation Tool, which interfaces with Visual Editing libraries
+/packages/sanity/src/presentation/ @sanity-io/ecosystem
+
+# Examples
+/examples/functions @kmelve @kenjonespizza @iamkevingreen

@@ -1,0 +1,16 @@
+{
+  "extends": "@repo/tsconfig/base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./lib",
+    "allowImportingTsExtensions": true,
+    "types": [
+      // vite/client: For import.meta.env/import.meta.hot definition and similar
+      "vite/client",
+      // @testing-library/jest-dom: @testing-library DOM matchers for vitest (toBeInTheDocument etc)
+      "@testing-library/jest-dom",
+      // For `Scheduler` API (can be removed if we adopt scheduler-polyfill, which comes with its own types)
+      "@types/wicg-task-scheduling"
+    ]
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "name": "@sanity/types",
+  "version": "5.12.0",
+  "description": "Type definitions for common Sanity data structures",
+  "keywords": [
+    "cms",
+    "content",
+    "headless",
+    "realtime",
+    "sanity",
+    "types",
+    "typescript"
+  ],
+  "homepage": "https://www.sanity.io/",
+  "bugs": {
+    "url": "https://github.com/sanity-io/sanity/issues"
+  },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sanity-io/sanity.git",
+    "directory": "packages/@sanity/types"
+  },
+  "files": [
+    "lib"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "monorepo": "./src/index.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": "./lib/index.js",
+      "./package.json": "./package.json"
+    }
+  },
+  "scripts": {
+    "build": "pkg-utils build --strict --check --clean",
+    "check:types": "(cd ../../.. && tsgo --project packages/@sanity/types/tsconfig.lib.json --erasableSyntaxOnly)",
+    "clean": "rimraf lib",
+    "lint": "eslint .",
+    "prepublishOnly": "turbo run build",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "watch": "pkg-utils watch"
+  },
+  "dependencies": {
+    "@sanity/client": "catalog:",
+    "@sanity/media-library-types": "^1.2.0"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/package.config": "workspace:*",
+    "@repo/test-config": "workspace:*",
+    "@repo/tsconfig": "workspace:*",
+    "@sanity/insert-menu": "3.0.4",
+    "@sanity/pkg-utils": "catalog:",
+    "@types/react": "catalog:",
+    "@typescript/native-preview": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "eslint": "catalog:",
+    "react": "catalog:",
+    "rimraf": "^5.0.10",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@types/react": "^19.2"
+  }
+}

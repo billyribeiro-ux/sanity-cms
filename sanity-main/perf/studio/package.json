@@ -1,0 +1,29 @@
+{
+  "name": "perf-studio",
+  "version": "5.12.0",
+  "private": true,
+  "description": "Sanity Studio with various test cases for tracking performance",
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "scripts": {
+    "build": "sanity build",
+    "clean": "rimraf .sanity dist",
+    "dev": "sanity dev --port 3300",
+    "lint": "eslint .",
+    "preview": "pnpm build && pnpm start",
+    "start": "sanity preview --port 3300"
+  },
+  "dependencies": {
+    "babel-plugin-react-compiler": "1.0.0",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "rimraf": "^5.0.10",
+    "sanity": "workspace:*",
+    "styled-components": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/tsconfig": "workspace:*",
+    "eslint": "catalog:"
+  }
+}

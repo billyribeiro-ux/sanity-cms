@@ -1,0 +1,148 @@
+{
+  "name": "@sanity/util",
+  "version": "5.12.0",
+  "description": "Utilities shared across projects of Sanity",
+  "keywords": [
+    "cms",
+    "content",
+    "headless",
+    "realtime",
+    "sanity",
+    "util"
+  ],
+  "homepage": "https://www.sanity.io/",
+  "bugs": {
+    "url": "https://github.com/sanity-io/sanity/issues"
+  },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sanity-io/sanity.git",
+    "directory": "packages/@sanity/util"
+  },
+  "files": [
+    "lib"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "fs": [
+        "./lib/fs.d.ts"
+      ],
+      "client": [
+        "./lib/client.d.ts"
+      ],
+      "concurrency-limiter": [
+        "./lib/concurrency-limiter.d.ts"
+      ],
+      "content": [
+        "./lib/content.d.ts"
+      ],
+      "createSafeJsonParser": [
+        "./lib/createSafeJsonParser.d.ts"
+      ],
+      "legacyDateFormat": [
+        "./lib/legacyDateFormat.d.ts"
+      ],
+      "paths": [
+        "./lib/paths.d.ts"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "source": "./src/_exports/index.ts",
+      "monorepo": "./src/_exports/index.ts",
+      "default": "./lib/index.js"
+    },
+    "./fs": {
+      "source": "./src/_exports/fs.ts",
+      "monorepo": "./src/_exports/fs.ts",
+      "default": "./lib/fs.js"
+    },
+    "./client": {
+      "source": "./src/_exports/client.ts",
+      "monorepo": "./src/_exports/client.ts",
+      "default": "./lib/client.js"
+    },
+    "./concurrency-limiter": {
+      "source": "./src/_exports/concurrency-limiter.ts",
+      "monorepo": "./src/_exports/concurrency-limiter.ts",
+      "default": "./lib/concurrency-limiter.js"
+    },
+    "./content": {
+      "source": "./src/_exports/content.ts",
+      "monorepo": "./src/_exports/content.ts",
+      "default": "./lib/content.js"
+    },
+    "./createSafeJsonParser": {
+      "source": "./src/_exports/createSafeJsonParser.ts",
+      "monorepo": "./src/_exports/createSafeJsonParser.ts",
+      "require": "./lib/createSafeJsonParser.cjs",
+      "default": "./lib/createSafeJsonParser.js"
+    },
+    "./legacyDateFormat": {
+      "source": "./src/_exports/legacyDateFormat.ts",
+      "monorepo": "./src/_exports/legacyDateFormat.ts",
+      "default": "./lib/legacyDateFormat.js"
+    },
+    "./paths": {
+      "source": "./src/_exports/paths.ts",
+      "monorepo": "./src/_exports/paths.ts",
+      "default": "./lib/paths.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": "./lib/index.js",
+      "./fs": "./lib/fs.js",
+      "./client": "./lib/client.js",
+      "./concurrency-limiter": "./lib/concurrency-limiter.js",
+      "./content": "./lib/content.js",
+      "./createSafeJsonParser": {
+        "require": "./lib/createSafeJsonParser.cjs",
+        "default": "./lib/createSafeJsonParser.js"
+      },
+      "./legacyDateFormat": "./lib/legacyDateFormat.js",
+      "./paths": "./lib/paths.js",
+      "./package.json": "./package.json"
+    }
+  },
+  "scripts": {
+    "build": "pnpm clean && pkg-utils build --strict --check --clean",
+    "check:types": "(cd ../../.. && tsgo --project packages/@sanity/util/tsconfig.lib.json --erasableSyntaxOnly)",
+    "clean": "rimraf client.js concurrency-limiter.js content.js createSafeJsonParser.js fs.js legacyDateFormat.js lib paths.js",
+    "lint": "eslint .",
+    "prepublishOnly": "turbo run build",
+    "test": "vitest run",
+    "watch": "pkg-utils watch"
+  },
+  "dependencies": {
+    "@date-fns/tz": "^1.4.1",
+    "@date-fns/utc": "^2.1.1",
+    "@sanity/client": "catalog:",
+    "@sanity/types": "workspace:*",
+    "date-fns": "^4.1.0",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/package.config": "workspace:*",
+    "@repo/test-config": "workspace:*",
+    "@repo/tsconfig": "workspace:*",
+    "@sanity/pkg-utils": "catalog:",
+    "@types/node": "catalog:",
+    "@typescript/native-preview": "catalog:",
+    "eslint": "catalog:",
+    "rimraf": "^5.0.10",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=20.19 <22 || >=22.12"
+  }
+}

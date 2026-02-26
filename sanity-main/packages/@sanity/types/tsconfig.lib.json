@@ -1,0 +1,11 @@
+{
+  "extends": "@repo/tsconfig/build.json",
+  "include": ["./src"],
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./lib",
+    "paths": {
+      "@sanity/types": ["./src/index.ts"]
+    }
+  }
+}

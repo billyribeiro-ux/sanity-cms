@@ -1,0 +1,132 @@
+import path, {dirname} from 'node:path'
+import {fileURLToPath} from 'node:url'
+import {parseArgs} from 'node:util'
+
+import {readEnv} from '@repo/utils'
+import {createClient} from '@sanity/client'
+import {tap} from 'rxjs'
+
+import {run} from './run'
+import {book} from './templates/book'
+import {liveEdit} from './templates/liveEdit'
+import {species} from './templates/species'
+import {validation} from './templates/validation'
+
+const {values: args} = parseArgs({
+  args: process.argv.slice(2),
+  allowNegative: true,
+  options: {
+    number: {
+      type: 'string',
+      short: 'n',
+      default: '1',
+    },
+    dataset: {
+      type: 'string',
+    },
+    bundle: {
+      type: 'string',
+    },
+    bundles: {
+      type: 'string',
+    },
+    draft: {
+      type: 'boolean',
+      default: true,
+    },
+    published: {
+      type: 'boolean',
+    },
+    size: {
+      type: 'string',
+    },
+    concurrency: {
+      type: 'string',
+      short: 'c',
+    },
+    template: {
+      type: 'string',
+      short: 't',
+    },
+    help: {
+      type: 'boolean',
+      short: 'h',
+    },
+  },
+})
+
+const templates = {
+  validation,
+  book,
+  species,
+  liveEdit,
+}
+
+const HELP_TEXT = `Usage: tsx --env-file=.env.local ./${path.relative(process.cwd(), process.argv[1])} --template <template> [arguments]
+
+     Arguments:
+      --template, -t <template>: Template to use (required). Possible values: ${Object.keys(templates).join(', ')}
+
+      --dataset: Dataset to generate documents in (defaults to 'test')
+      --amount, -n <int>: Number of documents to generate
+      --draft: Generate draft documents
+      --published: Generate published documents
+      --bundle <string>[,<string>,...<stringN>]: Bundle(s) to generate documents in
+      --size <bytes>: Size (in bytes) of the generated document (will be approximated)
+      --concurrency, -c <int>: Number of concurrent requests
+      --help, -h: Show this help message
+
+  Add more templates by adding them to the "./${path.relative(process.cwd(), path.join(dirname(fileURLToPath(import.meta.url)), './templates'))}" directory.
+    `
+
+if (args.help) {
+  console.log(HELP_TEXT)
+  process.exit(0)
+}
+
+if (!args.template) {
+  console.error('Error: Missing required `--template` argument\n')
+  console.error(HELP_TEXT)
+  process.exit(1)
+}
+if (!(args.template in templates)) {
+  console.error(`Error: Template "${args.template}" does not exist. Available templates: ${Object.keys(templates).join(', ')}
+`)
+  console.error(HELP_TEXT)
+  process.exit(1)
+}
+
+const template = templates[args.template as keyof typeof templates]
+
+type KnownEnvVar = 'TEST_STUDIO_WRITE_TOKEN'
+
+const client = createClient({
+  projectId: 'ppsg7ml5',
+  dataset: args.dataset || 'test',
+  token: readEnv<KnownEnvVar>('TEST_STUDIO_WRITE_TOKEN'),
+  apiVersion: '2024-07-31',
+  useCdn: false,
+})
+
+run({
+  bundles: args.bundle
+    ?.split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
+  draft: args.draft,
+  published: args.published,
+  concurrency: args.concurrency ? Number(args.concurrency) : undefined,
+  number: args.number ? Number(args.number) : undefined,
+  size: args.size ? Number(args.size) : undefined,
+  template,
+  client,
+})
+  .pipe(
+    tap({
+      next: (doc) => {
+        console.log('Created', doc._id)
+      },
+      error: console.error,
+    }),
+  )
+  .subscribe()

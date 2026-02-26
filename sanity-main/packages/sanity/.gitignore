@@ -1,0 +1,37 @@
+# Logs
+/logs
+*.log
+
+# Coverage directory used by tools like istanbul
+/coverage
+
+# Dependency directories
+/node_modules
+
+# Compiled code
+/lib
+/dist
+
+# Legacy exports
+/_internal.js
+/cli.js
+/desk.js
+/presentation.js
+/router.js
+/structure.js
+/_singletons.js
+/_createContext.js
+
+# Playwright-ct artifacts
+/playwright-ct/report
+/playwright-ct/results
+/playwright-ct/template/.cache/
+/playwright-ct/playwright-ct-report
+
+# Deleted legacy exports
+/migrate.js
+/_internal.js
+/cli.js
+
+# TypeDoc export
+/docs

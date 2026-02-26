@@ -1,0 +1,61 @@
+import {createSchema} from '../../../../schema'
+import {authorDocument} from './author'
+import {bookDocument} from './documents/book'
+import {objectsDocument} from './documents/objects'
+import {referencesDocument} from './documents/references'
+import {editorDocument} from './editor'
+import {hotspotDocument} from './hotspot'
+import {linkType, myStringObjectType, nestedObjectType} from './objects'
+import {postDocument} from './post'
+import {pteCustomMarkersDocument} from './pteCustomerMarkers'
+
+export const mockTypes = [
+  linkType,
+  myStringObjectType,
+  nestedObjectType,
+  {
+    name: 'customNamedBlock',
+    type: 'block',
+    title: 'A named custom block',
+    marks: {
+      annotations: [linkType, myStringObjectType],
+    },
+    of: [
+      {
+        type: 'object',
+        name: 'test',
+        fields: [myStringObjectType],
+      },
+      {
+        type: 'reference',
+        name: 'strongAuthorRef',
+        title: 'A strong author ref',
+        to: {type: 'author'},
+      },
+    ],
+  },
+  // Document with marks/markDefs fields that is NOT a PTE type
+  // Used to test that empty marks/markDefs are NOT preserved outside of PTE context
+  {
+    name: 'nonPteWithMarksFields',
+    type: 'document',
+    fields: [
+      {name: 'title', type: 'string'},
+      {name: 'marks', type: 'array', of: [{type: 'string'}]},
+      {name: 'markDefs', type: 'array', of: [{type: 'string'}]},
+    ],
+  },
+  authorDocument,
+  editorDocument,
+  postDocument,
+  pteCustomMarkersDocument,
+  hotspotDocument,
+  objectsDocument,
+  referencesDocument,
+  bookDocument,
+]
+
+export const schema = createSchema({
+  name: 'default',
+  types: mockTypes,
+})

@@ -1,0 +1,138 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>sanity-io/renovate-config",
+    "github>sanity-io/renovate-config:studio-v3",
+    ":dependencyDashboardApproval"
+  ],
+  "ignorePresets": [
+    "github>sanity-io/renovate-config:group-non-major",
+    "github>sanity-io/renovate-config:workarounds-esm",
+    "github>sanity-io/renovate-config:dedupe"
+  ],
+  "minimumReleaseAge": "3 days",
+  "packageRules": [
+    {
+      "description": "Exclude @sanity/* packages from minimumReleaseAge (no delay for internal packages)",
+      "matchPackageNames": [
+        "/^@sanity\\//",
+        "/^@portabletext\\//",
+        "/^react-rx$/",
+        "/^groq-js$/",
+        "/^oxfmt$/"
+      ],
+      "minimumReleaseAge": "0 days"
+    },
+    {
+      "description": "Enable automerge with GitHub merge queues (note that this doesn't bypass required checks and code reviews)",
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "description": "Dependency updates to examples and the root should always use the chore scope as they aren't published to npm",
+      "matchFileNames": ["package.json", "dev/**/package.json", "examples/**/package.json"],
+      "extends": [":semanticCommitTypeAll(chore)"]
+    },
+    {
+      "description": "Group minor and patch deps in dev to a single PR",
+      "matchFileNames": ["dev/**/package.json"],
+      "groupName": "dev-non-major",
+      "matchUpdateTypes": [
+        "bump",
+        "digest",
+        "minor",
+        "patch",
+        "pin",
+        "pinDigest",
+        "replacement",
+        "rollback"
+      ],
+      "matchPackageNames": ["!@portabletext/*", "!@sanity/client", "!@sanity/ui"]
+    },
+    {
+      "matchDepTypes": ["dependencies"],
+      "matchPackageNames": [
+        "@portabletext/*",
+        "@sanity/bifur-client",
+        "@sanity/client",
+        "@sanity/import",
+        "@sanity/export",
+        "@sanity/comlink",
+        "@sanity/export",
+        "@sanity/icons",
+        "@sanity/insert-menu",
+        "@sanity/mutate",
+        "@sanity/presentation-comlink",
+        "@sanity/preview-url-secret",
+        "@sanity/template-validator",
+        "@sanity/ui",
+        "@sanity/visual-editing-csm",
+        "get-it",
+        "groq-js",
+        "motion",
+        "react-rx",
+        "scrollmirror",
+        "xstate",
+        "@xstate/react"
+      ],
+      "rangeStrategy": "bump",
+      "semanticCommitType": "fix"
+    },
+    {
+      "description": "Ensure internal and important packages open a PRs right away, without waiting for manual approval",
+      "matchPackageNames": [
+        "lerna",
+        "@portabletext/block-tools",
+        "@portabletext/editor",
+        "@sanity/bifur-client",
+        "@sanity/client",
+        "@sanity/comlink",
+        "@sanity/eslint-config-i18n",
+        "@sanity/import",
+        "@sanity/export",
+        "@sanity/icons",
+        "@sanity/insert-menu",
+        "@sanity/mutate",
+        "@sanity/pkg-utils",
+        "@sanity/presentation-comlink",
+        "@sanity/preview-url-secret",
+        "@sanity/template-validator",
+        "@sanity/ui",
+        "@sanity/visual-editing-csm",
+        "esbuild",
+        "get-it",
+        "groq-js",
+        "react-dom",
+        "react-is",
+        "react-rx",
+        "react",
+        "use-sync-external-store",
+        "styled-components",
+        "typescript"
+      ],
+      "dependencyDashboardApproval": false,
+      "schedule": ["every weekday"]
+    },
+    {
+      "description": "Upgrade @portabletext/* packages together",
+      "matchPackageNames": ["@portabletext/*"],
+      "dependencyDashboardApproval": false,
+      "schedule": ["every weekday"],
+      "groupName": "portabletext"
+    },
+    {
+      "description": "Group TypeScript related deps in a single PR, as they often have to update together",
+      "groupName": "typescript-tooling",
+      "matchPackageNames": ["@sanity/pkg-utils", "typescript"]
+    },
+    {
+      "description": "Always upgrade oxlint together",
+      "groupName": "oxlint",
+      "matchPackageNames": ["oxlint", "eslint-plugin-oxlint", "oxlint-tsgolint"]
+    }
+  ],
+  "ignorePaths": [
+    "packages/@sanity/cli/test/__fixtures__/v2/package.json",
+    "packages/sanity/fixtures/examples/prj-with-react-19/package.json"
+  ]
+}

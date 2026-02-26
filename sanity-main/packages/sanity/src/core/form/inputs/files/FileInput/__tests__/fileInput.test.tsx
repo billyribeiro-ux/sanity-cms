@@ -1,0 +1,466 @@
+import {type FileAsset, type FileSchemaType} from '@sanity/types'
+import {screen, waitFor} from '@testing-library/react'
+import {userEvent} from '@testing-library/user-event'
+import {type Observable, of} from 'rxjs'
+import {describe, expect, it} from 'vitest'
+
+import {renderFileInput} from '../../../../../../../test/form'
+import {BaseFileInput} from '../FileInput'
+
+const observeAssetStub = (): Observable<FileAsset> =>
+  of({
+    originalFilename: 'cats.txt',
+    url: 'https://cdn.sanity.io/files/ppsg7ml5/test/26db46ec62059d6cd491b4343afaecc92ff1b4d5.txt',
+    size: 31,
+    _id: 'file-26db46ec62059d6cd491b4343afaecc92ff1b4d5-txt',
+    _rev: 'slQurnjRhOy7Fj3dkfUHei',
+    _type: 'sanity.fileAsset',
+  } as FileAsset)
+
+describe('FileInput with empty state', () => {
+  it('renders an empty input as default', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => <BaseFileInput {...inputProps} />,
+    })
+    expect(screen.queryByTestId('file-button-input')!.getAttribute('value')).toBe('')
+  })
+
+  it.todo('renders new file when a new file in uploaded')
+  it.todo('renders new file when a new file is dragged into the input')
+  it.todo('is unable to upload when the file type is not allowed')
+
+  /* assetSources - adds a list of sources that a user can pick from when browsing */
+
+  it('renders the browse button when it has at least one element in assetSources', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => <BaseFileInput {...inputProps} />,
+    })
+
+    expect(screen.getByTestId('file-input-upload-button-test-source')).toBeInTheDocument()
+    expect(screen.getByTestId('file-input-browse-button-test-source')).toBeInTheDocument()
+  })
+
+  it('renders only the upload button when it has no assetSources', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => <BaseFileInput {...inputProps} assetSources={[]} />,
+    })
+    expect(screen.queryByTestId('file-input-browse-button-test-source')).not.toBeInTheDocument()
+    expect(screen.getByTestId('file-input-upload-button-sanity-default')).toBeInTheDocument()
+    expect(screen.queryByTestId('file-input-browse-button-sanity-default')).not.toBeInTheDocument()
+  })
+
+  it('renders the browse button with a tooltip when it has at least one element in assetSources', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => (
+        <BaseFileInput
+          {...inputProps}
+          assetSources={[{name: 'source1', Uploader: {}}, {name: 'source2'}] as any}
+        />
+      ),
+    })
+
+    const browseButton = screen.queryByTestId('file-input-multi-browse-button')
+
+    expect(screen.getByTestId('file-input-upload-button-source1')).toBeInTheDocument()
+    expect(browseButton).toBeInTheDocument()
+
+    await userEvent.click(browseButton!)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('file-input-browse-button-source1')).toBeInTheDocument()
+      expect(screen.getByTestId('file-input-browse-button-source2')).toBeInTheDocument()
+    })
+  })
+
+  /* directUploads - allows for user to upload files directly (default is true) */
+
+  it('renders the upload button as disabled when directUploads is false', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => <BaseFileInput {...inputProps} directUploads={false} />,
+    })
+
+    expect(
+      screen.queryByTestId('file-input-upload-button-test-source')!.getAttribute('data-disabled'),
+    ).toBe('true')
+  })
+
+  it('has default text that mentions that you cannot upload files when directUploads is false', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => <BaseFileInput {...inputProps} directUploads={false} />,
+    })
+
+    expect(
+      screen.queryByTestId('file-input-upload-button-test-source')!.getAttribute('data-disabled'),
+    ).toBe('true')
+  })
+
+  /* readOnly - the file input is read only or not */
+
+  it('the upload button is disabled when the input is readOnly', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => <BaseFileInput {...inputProps} readOnly />,
+    })
+
+    expect(
+      screen.queryByTestId('file-input-browse-button-test-source')!.getAttribute('data-disabled'),
+    ).toBe('true')
+  })
+
+  it('does not allow for browsing when input is readOnly', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => <BaseFileInput {...inputProps} readOnly />,
+    })
+
+    expect(
+      screen.queryByTestId('file-input-browse-button-test-source')!.getAttribute('data-disabled'),
+    ).toBe('true')
+  })
+
+  it('does not allow for upload when input is readOnly', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => <BaseFileInput {...inputProps} readOnly />,
+    })
+
+    const input = screen.queryByTestId('file-button-input')
+
+    await userEvent.upload(input!, new File(['(⌐□_□)'], 'cool_sunglasses.pdf', {type: 'file/pdf'}))
+
+    await waitFor(() => {
+      expect(screen.getByText('Read only')).toBeInTheDocument()
+    })
+  })
+
+  it.todo('does not allow files to be dragged & uploaded when it is readOnly')
+})
+
+describe('FileInput with asset', () => {
+  const value = {
+    asset: {
+      _ref: 'file-26db46ec62059d6cd491b4343afaecc92ff1b4d5-txt',
+      _type: 'reference',
+    },
+    _type: 'file',
+  }
+
+  it('renders the right url as default when it has asset', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => <BaseFileInput {...inputProps} value={value} />,
+    })
+
+    expect(screen.getByText('cats.txt')).toBeInTheDocument()
+    expect(screen.getByText('31 Bytes')).toBeInTheDocument()
+  })
+
+  it.todo('renders new file when a new file in uploaded')
+  it.todo('renders new file when a new file is dragged into the input')
+  it.todo('is unable to upload when the file type is not allowed')
+
+  /* assetSources - adds a list of sources that a user can pick from when browsing */
+
+  it('renders the browse button in the file menu when it has at least one element in assetSources', async () => {
+    // render(<BaseFileInput value={value} />)
+    // const {result} = render({
+    //   value,
+    // })
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => <BaseFileInput {...inputProps} value={value} />,
+    })
+
+    await userEvent.click(screen.queryByTestId('options-menu-button')!)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('file-input-browse-button-test-source')).toBeInTheDocument()
+    })
+  })
+
+  it('renders the upload button, but no browse item in the file menu when it has empty sources in the schema type', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => (
+        <BaseFileInput
+          {...inputProps}
+          schemaType={{
+            ...inputProps.schemaType,
+            options: {...inputProps.schemaType.options, sources: []},
+          }}
+          value={value}
+        />
+      ),
+    })
+
+    await userEvent.click(screen.queryByTestId('options-menu-button')!)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('file-input-upload-button-test-source')).toBeInTheDocument()
+      expect(screen.queryByTestId('file-input-browse-button-test-source')).not.toBeInTheDocument()
+    })
+  })
+
+  it('renders the multiple browse buttons in the file menu when it has multiple assetSources', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => (
+        <BaseFileInput
+          {...inputProps}
+          assetSources={[{name: 'source1'}, {name: 'source2'}] as any}
+          value={value}
+        />
+      ),
+    })
+
+    await userEvent.click(screen.queryByTestId('options-menu-button')!)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('file-input-browse-button-source1')).toBeInTheDocument()
+      expect(screen.getByTestId('file-input-browse-button-source2')).toBeInTheDocument()
+    })
+  })
+
+  /* directUploads - allows for user to upload files directly (default is true) */
+
+  it('renders the upload button as disabled when directUploads is false', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => <BaseFileInput {...inputProps} directUploads={false} value={value} />,
+    })
+
+    await userEvent.click(screen.queryByTestId('options-menu-button')!)
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('file-input-upload-button-test-source')?.getAttribute('data-disabled'),
+      ).toBe('')
+    })
+  })
+
+  /* readOnly - the files input is read only or not */
+
+  it('the upload button in the dropdown menu is disabled when the input is readOnly', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => <BaseFileInput {...inputProps} readOnly value={value} />,
+    })
+
+    await userEvent.click(screen.queryByTestId('options-menu-button')!)
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('file-input-browse-button-test-source')!.getAttribute('data-disabled'),
+      ).toBe('')
+    })
+  })
+
+  it('does not allow for browsing when input is readOnly', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => <BaseFileInput {...inputProps} readOnly value={value} />,
+    })
+
+    await userEvent.click(screen.queryByTestId('options-menu-button')!)
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('file-input-browse-button-test-source')!.hasAttribute('data-disabled'),
+      )
+    })
+  })
+
+  it('does not allow for browsing with multiple sources when input is readOnly', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => (
+        <BaseFileInput
+          {...inputProps}
+          assetSources={[{name: 'source1'}, {name: 'source2'}] as any}
+          readOnly
+          value={value}
+        />
+      ),
+    })
+
+    await userEvent.click(screen.queryByTestId('options-menu-button')!)
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId('file-input-browse-button-source1')!.hasAttribute('data-disabled'),
+      )
+      expect(
+        screen.queryByTestId('file-input-browse-button-source2')!.hasAttribute('data-disabled'),
+      )
+    })
+  })
+
+  it('does not allow for clearing the input it is readOnly', async () => {
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => <BaseFileInput {...inputProps} readOnly value={value} />,
+    })
+
+    await userEvent.click(screen.queryByTestId('options-menu-button')!)
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('file-input-clear')!.hasAttribute('data-disabled'))
+    })
+  })
+
+  it.skip('does not allow for upload when input is readOnly & the image src is the same', async () => {
+    const fileType = {
+      description: '',
+      fields: [
+        {
+          name: 'asset',
+          type: {
+            fields: [],
+            jsonType: 'object',
+            name: 'reference',
+            title: 'Reference to file',
+            to: [],
+            type: {name: 'reference', type: null, jsonType: 'object', validation: []},
+            validation: [],
+          },
+        },
+      ],
+      options: {
+        accept: 'file/pdf',
+      },
+    }
+
+    // const {result} = render({
+    //   readOnly: true,
+    //   schemaType: fileType as any as FileSchemaType,
+    //   value,
+    // })
+
+    const {result} = await renderFileInput({
+      fieldDefinition: {
+        name: 'someFile',
+        title: 'A simple file',
+        type: 'file',
+      },
+      observeAsset: observeAssetStub,
+      render: (inputProps) => (
+        <BaseFileInput
+          {...inputProps}
+          readOnly
+          schemaType={fileType as any as FileSchemaType}
+          value={value}
+        />
+      ),
+    })
+
+    await userEvent.click(screen.queryByTestId('options-menu-button')!)
+
+    await userEvent.upload(
+      screen.queryByTestId('file-button-input')!,
+      new File(['(⌐□_□)'], 'cool_sunglasses.pdf', {type: 'file/pdf'}),
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('cats.txt')).toBeInTheDocument()
+      expect(screen.getByText('31 Bytes')).toBeInTheDocument()
+    })
+  })
+
+  it.todo('does not allow files to be dragged & uploaded when it is readOnly')
+})

@@ -1,0 +1,68 @@
+{
+  "name": "@sanity/diff",
+  "version": "5.12.0",
+  "description": "Generates diffs between documents and primitive types",
+  "keywords": [
+    "cms",
+    "content",
+    "diff",
+    "headless",
+    "realtime",
+    "sanity"
+  ],
+  "homepage": "https://www.sanity.io/",
+  "bugs": {
+    "url": "https://github.com/sanity-io/sanity/issues"
+  },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sanity-io/sanity.git",
+    "directory": "packages/@sanity/diff"
+  },
+  "files": [
+    "lib"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "monorepo": "./src/index.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": "./lib/index.js",
+      "./package.json": "./package.json"
+    }
+  },
+  "scripts": {
+    "build": "pkg-utils build --strict --check --clean",
+    "check:types": "(cd ../../.. && tsgo --project packages/@sanity/diff/tsconfig.lib.json --erasableSyntaxOnly)",
+    "clean": "rimraf lib coverage",
+    "lint": "eslint .",
+    "prepublishOnly": "turbo run build",
+    "watch": "pkg-utils watch"
+  },
+  "dependencies": {
+    "@sanity/diff-match-patch": "^3.2.0"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/package.config": "workspace:*",
+    "@repo/tsconfig": "workspace:*",
+    "@sanity/pkg-utils": "catalog:",
+    "@typescript/native-preview": "catalog:",
+    "eslint": "catalog:",
+    "rimraf": "^5.0.10"
+  },
+  "engines": {
+    "node": ">=20.19 <22 || >=22.12"
+  }
+}

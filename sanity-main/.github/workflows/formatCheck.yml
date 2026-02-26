@@ -1,0 +1,29 @@
+name: Format check
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  formatCheck:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup
+
+      - name: Cache Prettier
+        uses: actions/cache@v5
+        with:
+          path: node_modules/.cache/prettier/.prettier-cache
+          key: prettier-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Run format check
+        run: pnpm turbo run check:format
