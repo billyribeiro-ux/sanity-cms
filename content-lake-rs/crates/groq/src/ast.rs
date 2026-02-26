@@ -1,17 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-/// GROQ Abstract Syntax Tree.
+/// GROQ Abstract Syntax Tree types.
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Expr {
-    // Dataset
-    Everything,
-
-    // Pipeline
-    Pipeline(Vec<Expr>),
-    Filter(Box<Expr>),
-    Projection(Vec<(String, Expr)>),
-    Order(Box<Expr>, bool),
-    Slice(usize, usize),
 
     // Literals
     StringLiteral(String),
@@ -41,6 +33,14 @@ pub enum Expr {
     And(Box<Expr>, Box<Expr>),
     Or(Box<Expr>, Box<Expr>),
     Not(Box<Expr>),
+
+    // Query constructs
+    Everything,
+    Filter(Box<Expr>),
+    Projection(Vec<(String, Expr)>),
+    Pipeline(Vec<Expr>),
+    Order(Box<Expr>, bool),
+    Slice(Box<Expr>, i64, i64),
 
     // Function call
     FuncCall(String, Vec<Expr>),
