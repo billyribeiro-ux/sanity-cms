@@ -12,6 +12,7 @@ pub struct AppState {
     inner: Arc<InnerState>,
 }
 
+#[allow(dead_code)]
 struct InnerState {
     pub pool: PgPool,
     pub config: AppConfig,
@@ -33,6 +34,7 @@ impl AppState {
         &self.inner.pool
     }
 
+    #[allow(dead_code)]
     pub fn config(&self) -> &AppConfig {
         &self.inner.config
     }

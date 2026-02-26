@@ -7,6 +7,7 @@ use serde_json::json;
 
 /// API error type that maps to Sanity-compatible JSON error responses.
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum ApiError {
     #[error("not found: {0}")]
     NotFound(String),
