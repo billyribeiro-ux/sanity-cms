@@ -15,6 +15,21 @@ export interface KitConfigOptions {
   replaceSchemaTypes?: boolean
   /** Singleton documents that should be pinned to one instance (e.g. `siteSettings`). */
   singletons?: string[]
+  /**
+   * Base URL of the self-hosted Content Lake API (content-lake-rs).
+   * When set, the Studio sends all data-layer requests here instead of
+   * `api.sanity.io`. Example: `http://localhost:3030`.
+   *
+   * Leave undefined to use Sanity's hosted backend.
+   */
+  apiHost?: string
+  /**
+   * Whether to route requests under `{apiHost}/v1/...` instead of
+   * `{projectId}.{apiHost}/v1/...`. Required when self-hosting, since
+   * we don't wildcard-subdomain the backend. Defaults to `true` when
+   * `apiHost` is set.
+   */
+  useProjectHostname?: boolean
 }
 
 /**
@@ -40,17 +55,28 @@ export function defineKitConfig(options: KitConfigOptions): Config {
     plugins = [],
     replaceSchemaTypes = false,
     singletons = [],
+    apiHost,
+    useProjectHostname,
   } = options
 
   const types = replaceSchemaTypes
     ? schemaTypes
     : [...(allSchemaTypes as SchemaTypeDefinition[]), ...schemaTypes]
 
+  // When self-hosting, default useProjectHostname to false so client URLs
+  // are path-based (`/v1/...`) instead of subdomain-based.
+  const resolvedUseProjectHostname =
+    useProjectHostname ?? (apiHost ? false : undefined)
+
   return defineConfig({
     name,
     title,
     projectId,
     dataset,
+    ...(apiHost ? {apiHost} : {}),
+    ...(resolvedUseProjectHostname !== undefined
+      ? {useProjectHostname: resolvedUseProjectHostname}
+      : {}),
     schema: {
       types,
       // Hide "create new" buttons and list items for singletons.

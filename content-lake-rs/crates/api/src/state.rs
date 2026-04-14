@@ -34,7 +34,6 @@ impl AppState {
         &self.inner.pool
     }
 
-    #[allow(dead_code)]
     pub fn config(&self) -> &AppConfig {
         &self.inner.config
     }

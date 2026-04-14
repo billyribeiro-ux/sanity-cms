@@ -45,6 +45,23 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!("Database migrations applied");
 
+    // Bootstrap the default project + dataset so Studio can connect
+    // without requiring a manual provisioning step.
+    let (project_id, dataset_id) = content_lake_core::document::repo::bootstrap(
+        &pool,
+        &config.bootstrap_project,
+        &config.bootstrap_dataset,
+    )
+    .await
+    .map_err(|e| anyhow::anyhow!("bootstrap failed: {e}"))?;
+    tracing::info!(
+        project = %config.bootstrap_project,
+        dataset = %config.bootstrap_dataset,
+        project_id = %project_id,
+        dataset_id = %dataset_id,
+        "Bootstrap project/dataset ready"
+    );
+
     // Create event bus
     let event_bus = EventBus::new(config.event_bus_capacity);
 

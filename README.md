@@ -1,73 +1,102 @@
 # cms-kit
 
-A personal toolkit for spinning up Sanity Studio projects quickly across clients.
-Uses Sanity's free hosted Content Lake as the backend — no fork, no rebrand, no
-self-hosting.
+A personal, fully self-hosted headless CMS built on Sanity Studio + a Rust
+Content Lake replica. **Nothing talks to `api.sanity.io`.** All data stays
+on your Postgres, behind your Rust server, rendered by a Studio you control.
 
 ## What's in the box
 
 ```
-cms-kit/
+sanity-cms/
 ├── packages/
-│   ├── schemas/          # Reusable schema types (page, SEO, image, CTA, etc.)
-│   ├── studio-config/    # defineKitConfig() helper — your Studio defaults in one call
-│   └── plugins/
-│       └── vision/       # Vendored copy of @sanity/vision, yours to modify
-└── templates/
-    └── starter/          # Complete Studio you can copy into a new client repo
+│   ├── schemas/              Reusable Sanity schema types
+│   ├── studio-config/        defineKitConfig() helper
+│   └── plugins/              17 vendored first-party Sanity plugins
+├── templates/
+│   └── starter/              Ready-to-run Studio wired to the backend
+└── content-lake-rs/          Rust backend (Axum + SQLx + Postgres)
+    ├── crates/
+    │   ├── api/              HTTP server
+    │   ├── core/             Document repo, mutation engine
+    │   └── groq/             GROQ parser (query layer, in progress)
+    ├── migrations/
+    ├── Dockerfile
+    └── docker-compose.yml
 ```
 
-## How you use this across client projects
+## Quick start
 
-### Option A — per-client repo, installs from your registry
+Requires: Node 20+, pnpm 10+, Rust 1.75+, Docker.
 
 ```bash
-# In each client repo
-npm create sanity@latest
-pnpm add @cms-kit/schemas @cms-kit/studio-config @cms-kit/vision
+# 1. Start Postgres + the Rust API
+cd content-lake-rs
+docker compose up -d postgres
+cargo run --bin content-lake-api
+# API is now at http://localhost:3030
+
+# 2. In another terminal: boot the Studio
+cd ..
+pnpm install
+cp templates/starter/.env.example templates/starter/.env
+pnpm --filter starter dev
+# Studio opens at http://localhost:3333 and talks ONLY to localhost:3030
 ```
 
-Then in `sanity.config.ts`:
+## What's implemented
 
-```ts
-import {defineKitConfig} from '@cms-kit/studio-config'
-import * as schemas from '@cms-kit/schemas'
+### Backend (`content-lake-rs`)
+- ✅ `GET /health`, `GET /v1/ping`
+- ✅ `GET /v1/users/me`, `GET /v1/users/{id}`, `GET /v1/auth/providers`, `POST /v1/auth/logout` (single-user stubs)
+- ✅ `GET /v1/projects/{id}`, `GET /v1/projects/{id}/datasets`
+- ✅ `GET /v1/data/doc/{dataset}/{ids}` — multi-id document fetch with `omitted` reporting
+- ✅ `POST /v1/data/mutate/{dataset}` — full mutation batch: create, createOrReplace,
+  createIfNotExists, delete, patch (set, setIfMissing, unset, inc, dec, insert,
+  merge, ifRevisionID)
+- ✅ Postgres schema with JSONB documents, transaction log
+- ✅ Bootstrap default project/dataset on startup
+- ⏳ `GET /v1/data/query/{dataset}` (GROQ → SQL over JSONB) — parser built, query planner pending
+- ⏳ `GET /v1/data/listen/{dataset}` (SSE real-time) — event bus in place
+- ⏳ `POST /v1/assets/images/{dataset}` — asset uploads
+- ⏳ `diffMatchPatch` patch op — currently returns `Unsupported`
+- ⏳ Real auth (token-based) — currently single-user trust
 
-export default defineKitConfig({
-  projectId: 'xxxxxxxx',
-  dataset: 'production',
-  schemaTypes: Object.values(schemas),
-})
-```
+### Studio (`packages/`, `templates/starter/`)
+- ✅ 7 reusable schema types (page, siteSettings, navigation, seo, imageWithAlt, link, cta, richText)
+- ✅ `defineKitConfig()` with singleton handling + apiHost override
+- ✅ 17 vendored first-party Sanity plugins under `packages/plugins/`
+- ✅ Runnable starter pointing at `http://localhost:3030`
 
-### Option B — copy the starter
+## Per-client project workflow
 
 ```bash
-cp -r cms-kit/templates/starter my-client-studio
-cd my-client-studio
-# edit sanity.config.ts with projectId + dataset
-pnpm install && pnpm dev
+# Bootstrap a new client project
+cp -r templates/starter ~/projects/client-xyz
+cd ~/projects/client-xyz
+# Set the projectId + dataset in .env (or create them via the backend first)
+pnpm install
+pnpm dev
 ```
 
-## Status
+Every client gets their own Postgres database (or their own dataset on a
+shared database). Zero dependency on Sanity.io infrastructure.
 
-- ✅ Scaffolded
-- ⏳ Schema types are placeholders — fill with real types as you build them
-- ⏳ Studio config is a thin wrapper — extend with your defaults
-- ⏳ Not yet published to a registry. Publish under your scope when ready.
+## Renaming `@cms-kit/*` to your own scope
 
-## Renaming to your own npm scope
-
-All packages are namespaced `@cms-kit/*` as a placeholder. When you pick a
-real product name, do a global replace:
+Packages are namespaced `@cms-kit/*` as a placeholder. Global replace when you
+pick a product name:
 
 ```bash
-# from cms-kit/ root
-grep -rln "@cms-kit/" . --exclude-dir=node_modules | xargs sed -i '' 's|@cms-kit/|@yourname/|g'
+grep -rln "@cms-kit/" . --exclude-dir=node_modules --exclude-dir=target \
+  | xargs sed -i 's|@cms-kit/|@yourname/|g'
 ```
 
-## Relationship to Sanity.io
+## Licenses + attribution
 
-This project uses Sanity Studio (MIT) and talks to Sanity's hosted Content Lake.
-See [NOTICE](./NOTICE) for attribution. "Sanity" is a Sanity.io trademark; this
-project is not affiliated with or endorsed by Sanity.io.
+- Studio code derives from [sanity-io/sanity](https://github.com/sanity-io/sanity) (MIT).
+- Vendored plugins each carry their original LICENSE and an `UPSTREAM.md` noting
+  the source commit SHA so you can re-sync later.
+- `content-lake-rs` is original work.
+
+See [NOTICE](./NOTICE) for the full attribution notice. "Sanity" is a Sanity.io
+trademark; this project is not affiliated with or endorsed by Sanity.io.
