@@ -85,6 +85,9 @@ Content Lake contract for the implemented surface.
 | `GET /v1/data/listen/{dataset}` | ✅ SSE with welcome + mutation events |
 | `POST /v1/assets/images/{dataset}` | ✅ raw body, SHA-1 content addressing |
 | `GET /assets/images/{filename}` | ✅ |
+| `POST /v1/assets/files/{dataset}` | ✅ sanity.fileAsset, multipart or raw |
+| `GET /assets/files/{filename}` | ✅ |
+| `GET /v1/presence/{dataset}` | ✅ WebSocket — welcome, initial snapshot, state + disappear broadcasts |
 
 ### Studio (`packages/`, `templates/starter/`)
 - ✅ 7 reusable schema types (page, siteSettings, navigation, seo, imageWithAlt, link, cta, richText)
@@ -95,8 +98,6 @@ Content Lake contract for the implemented surface.
 ### Still honestly pending
 
 - **GROQ gaps**: arbitrary subqueries in projections, slice-expressions in filters, `order()` on nested arrays, `pt::text()` and other string helpers
-- **Multipart asset upload** — raw body only; some Sanity client paths use multipart
-- **Presence WebSocket** — multi-user cursors; skipped for MVP
 - **Server-side schema validation** — Studio validates client-side only
 - **Hardcoded-URL escape audit** of `@sanity/client` — most CDN/auth redirect URLs route via `apiHost`, but some may still reach `sanity.io`; catch via smoke-test
 

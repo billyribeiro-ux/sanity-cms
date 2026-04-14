@@ -144,6 +144,12 @@ fn is_exempt(method: &Method, path: &str) -> bool {
     if method == Method::GET && path.starts_with("/v1/projects") {
         return true;
     }
+    // Presence WebSockets use the browser's native WebSocket API which can't
+    // send custom Authorization headers. Exempt for MVP; gate via a query-
+    // string token in a future phase.
+    if path.starts_with("/v1/presence/") {
+        return true;
+    }
     false
 }
 
