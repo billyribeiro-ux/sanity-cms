@@ -125,15 +125,30 @@ async fn run_query(
     // In-memory sort for ordering not pushed into SQL.
     sql_gen::sort_in_memory(&plan.order_by, &mut results);
 
-    // Apply projection.
+    // count(*[...]) short-circuits: just return the integer.
+    if plan.count_only {
+        let ms = started.elapsed().as_millis() as u64;
+        return Ok(Json(json!({
+            "ms": ms,
+            "query": query,
+            "result": results.len() as u64,
+        })));
+    }
+
+    // Apply projection (placeholders for Deref are inserted as _ref ids).
     let mut projected: Vec<Value> = if let Some(spec) = &plan.projection {
-        results.iter().map(|d| sql_gen::apply_projection(spec, d)).collect()
+        results
+            .iter()
+            .map(|d| sql_gen::apply_projection(spec, d))
+            .collect()
     } else {
         results
     };
 
-    // If SQL didn't push a slice (e.g. negative indices) we could do it here.
-    // For MVP the planner only produces positive slices which are pushed.
+    // Second pass: resolve dereferenced fields.
+    if let Some(spec) = &plan.projection {
+        resolve_derefs(&state, dataset_id, spec, &mut projected).await?;
+    }
 
     let result = if plan.single {
         projected.into_iter().next().unwrap_or(Value::Null)
@@ -147,6 +162,57 @@ async fn run_query(
         "query": query,
         "result": result,
     })))
+}
+
+/// Second-pass resolution for `->` projections. Collects every unique `_ref`
+/// id across all rows, fetches them in a single SQL round-trip, and patches
+/// each projected doc with the resolved target.
+async fn resolve_derefs(
+    state: &AppState,
+    dataset_id: sqlx::types::Uuid,
+    spec: &sql_gen::ProjectionSpec,
+    projected: &mut [Value],
+) -> ApiResult<()> {
+    use std::collections::{HashMap, HashSet};
+
+    // Collect every id needed.
+    let mut needed: HashSet<String> = HashSet::new();
+    for doc in projected.iter() {
+        for (_, id) in sql_gen::extract_deref_requests(spec, doc) {
+            needed.insert(id);
+        }
+    }
+    if needed.is_empty() {
+        return Ok(());
+    }
+
+    // Fetch them all in one shot via the repo.
+    let ids: Vec<String> = needed.into_iter().collect();
+    let (found, _omitted) = repo::get_documents(state.pool(), dataset_id, &ids)
+        .await
+        .map_err(map_repo_err)?;
+
+    // Materialize wire docs keyed by id.
+    let mut by_id: HashMap<String, Value> = HashMap::with_capacity(found.len());
+    for d in found {
+        let id = d._id.clone();
+        let mut obj = d.content;
+        obj.insert("_id".into(), Value::String(id.clone()));
+        obj.insert("_type".into(), Value::String(d._type));
+        obj.insert("_rev".into(), Value::String(d._rev));
+        obj.insert("_createdAt".into(), Value::String(odt_to_iso_dt(d.created_at)));
+        obj.insert("_updatedAt".into(), Value::String(odt_to_iso_dt(d.updated_at)));
+        by_id.insert(id, Value::Object(obj));
+    }
+
+    for doc in projected.iter_mut() {
+        sql_gen::apply_deref_resolutions(spec, doc, &by_id);
+    }
+    Ok(())
+}
+
+fn odt_to_iso_dt(dt: DateTime<Utc>) -> String {
+    dt.to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
 }
 
 fn bind_json<'q>(

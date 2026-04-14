@@ -195,6 +195,12 @@ impl Parser {
                 let right = self.parse_primary()?;
                 Ok(Expr::In(Box::new(left), Box::new(right)))
             }
+            Token::Match => {
+                self.advance();
+                let right = self.parse_primary()?;
+                // Represent as FuncCall so sql_gen's existing match handler picks it up.
+                Ok(Expr::FuncCall("match".to_string(), vec![left, right]))
+            }
             _ => Ok(left),
         }
     }
@@ -230,10 +236,13 @@ impl Parser {
                         self.advance();
                         let mut args = Vec::new();
                         if self.peek() != &Token::RParen {
-                            args.push(self.parse_filter_expr()?);
+                            // `parse_expr` (not `parse_filter_expr`) so function
+                            // arguments can contain `*[...]` pipelines, e.g.
+                            // `count(*[_type == "page"])`.
+                            args.push(self.parse_expr()?);
                             while self.peek() == &Token::Comma {
                                 self.advance();
-                                args.push(self.parse_filter_expr()?);
+                                args.push(self.parse_expr()?);
                             }
                         }
                         self.expect(&Token::RParen)?;
@@ -336,6 +345,19 @@ impl Parser {
                     self.advance();
                     let expr = self.parse_filter_expr()?;
                     fields.push((name, expr));
+                } else if self.peek() == &Token::Arrow {
+                    // `author->` or `author->field` — dereferenced projection.
+                    self.advance();
+                    let base = Expr::Ident(name.clone());
+                    let (alias, expr) = if let Token::Ident(field) = self.peek().clone() {
+                        self.advance();
+                        (name, Expr::Deref(Box::new(base), field))
+                    } else {
+                        // Bare `author->` means "follow the ref but return the
+                        // whole target doc". Represent as Deref with empty field.
+                        (name, Expr::Deref(Box::new(base), String::new()))
+                    };
+                    fields.push((alias, expr));
                 } else {
                     fields.push((name.clone(), Expr::Ident(name)));
                 }

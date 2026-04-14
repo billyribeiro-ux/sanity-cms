@@ -80,7 +80,7 @@ Content Lake contract for the implemented surface.
 | `GET /v1/projects/{id}`, `GET /v1/projects/{id}/datasets` | ✅ |
 | `GET /v1/data/doc/{dataset}/{ids}` | ✅ multi-id with `omitted` |
 | `POST /v1/data/mutate/{dataset}` | ✅ create, createOrReplace, createIfNotExists, delete, patch (set, setIfMissing, unset, inc, dec, insert, merge, ifRevisionID, diffMatchPatch) |
-| `GET /v1/data/query/{dataset}` | ✅ GROQ MVP subset (filter, order, slice, projection, params, `defined()`) |
+| `GET /v1/data/query/{dataset}` | ✅ GROQ (filter, order, slice, projection, params, `defined()`, `in`, `match`, `count()`, `references()`, deref `->`) |
 | `POST /v1/data/query/{dataset}` | ✅ |
 | `GET /v1/data/listen/{dataset}` | ✅ SSE with welcome + mutation events |
 | `POST /v1/assets/images/{dataset}` | ✅ raw body, SHA-1 content addressing |
@@ -94,7 +94,7 @@ Content Lake contract for the implemented surface.
 
 ### Still honestly pending
 
-- **GROQ extensions**: dereferencing (`->`), `in`, `match`, `count()`, subqueries — all return `400 unsupported`
+- **GROQ gaps**: arbitrary subqueries in projections, slice-expressions in filters, `order()` on nested arrays, `pt::text()` and other string helpers
 - **Multipart asset upload** — raw body only; some Sanity client paths use multipart
 - **Presence WebSocket** — multi-user cursors; skipped for MVP
 - **Server-side schema validation** — Studio validates client-side only
