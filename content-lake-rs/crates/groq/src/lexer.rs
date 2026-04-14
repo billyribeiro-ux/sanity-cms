@@ -64,6 +64,10 @@ pub enum Token {
     Caret, // ^
     /// The ellipsis operator.
     Ellipsis, // ...
+    /// A double-dot range separator (`..`).
+    DotDot,
+    /// A parameter reference (`$name`). Holds the name without the `$`.
+    Param(String),
 
     /// The left parenthesis.
     LParen, // (
@@ -156,6 +160,9 @@ pub fn tokenize(input: &str) -> Result<Vec<SpannedToken>, LexError> {
                 if pos + 2 < chars.len() && chars[pos + 1] == '.' && chars[pos + 2] == '.' {
                     pos += 3;
                     Token::Ellipsis
+                } else if pos + 1 < chars.len() && chars[pos + 1] == '.' {
+                    pos += 2;
+                    Token::DotDot
                 } else {
                     pos += 1;
                     Token::Dot
@@ -314,7 +321,18 @@ pub fn tokenize(input: &str) -> Result<Vec<SpannedToken>, LexError> {
                     Token::Integer(num_str.parse().unwrap())
                 }
             }
-            c if c.is_alphabetic() || c == '_' || c == '$' => {
+            '$' => {
+                pos += 1;
+                let name_start = pos;
+                while pos < chars.len() && (chars[pos].is_alphanumeric() || chars[pos] == '_') {
+                    pos += 1;
+                }
+                if name_start == pos {
+                    return Err(LexError::UnexpectedChar('$', start));
+                }
+                Token::Param(input[name_start..pos].to_string())
+            }
+            c if c.is_alphabetic() || c == '_' => {
                 while pos < chars.len() && (chars[pos].is_alphanumeric() || chars[pos] == '_') {
                     pos += 1;
                 }

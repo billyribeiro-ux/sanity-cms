@@ -27,6 +27,11 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 dotenvy.workspace = true
 jsonwebtoken.workspace = true
+argon2.workspace = true
+sha1 = "0.10"
+futures = "0.3"
+tokio-stream = { version = "0.1", features = ["sync"] }
+tokio-util = { version = "0.7", features = ["io"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }
