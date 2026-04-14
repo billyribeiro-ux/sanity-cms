@@ -158,7 +158,20 @@ ok "POST /v1/assets/files uploaded sanity.fileAsset"
 
 rm -f "$IMG" "$TXT"
 
-# ---- 8. delete ----
+# ---- 8. presence WebSocket handshake ----
+hdr "presence"
+# Full WS testing requires a WS client; smoke-test just verifies the handshake
+# upgrades (HTTP 101). Install `websocat` to exercise the full protocol.
+code=$(curl -s -o /dev/null -w "%{http_code}" \
+  -H "Connection: Upgrade" \
+  -H "Upgrade: websocket" \
+  -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
+  -H "Sec-WebSocket-Version: 13" \
+  "$API/v1/presence/$DATASET")
+[ "$code" = "101" ] || fail "presence upgrade" "got $code"
+ok "/v1/presence/$DATASET upgrades to WebSocket (101)"
+
+# ---- 9. delete ----
 hdr "delete"
 del=$(curl -s -X POST "$API/v1/data/mutate/$DATASET" \
   -H "Authorization: Bearer $TOKEN" \

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tokio::sync::broadcast;
 
-use super::types::ContentLakeEvent;
+use super::types::{ContentLakeEvent, PresenceEvent};
 
 /// In-process event bus backed by `tokio::broadcast`.
 /// Single-node; will be extended to PG LISTEN/NOTIFY for multi-node.
@@ -39,6 +39,44 @@ impl EventBus {
 }
 
 impl Default for EventBus {
+    fn default() -> Self {
+        Self::new(1024)
+    }
+}
+
+/// Dedicated broadcast channel for presence (cursor) events. Kept separate
+/// from the document mutation bus so a chatty presence stream never backs up
+/// the data-layer listeners.
+#[derive(Debug, Clone)]
+pub struct PresenceBus {
+    sender: Arc<broadcast::Sender<PresenceEvent>>,
+}
+
+impl PresenceBus {
+    pub fn new(capacity: usize) -> Self {
+        let (sender, _) = broadcast::channel(capacity);
+        Self {
+            sender: Arc::new(sender),
+        }
+    }
+
+    pub fn publish(
+        &self,
+        event: PresenceEvent,
+    ) -> Result<usize, broadcast::error::SendError<PresenceEvent>> {
+        self.sender.send(event)
+    }
+
+    pub fn subscribe(&self) -> broadcast::Receiver<PresenceEvent> {
+        self.sender.subscribe()
+    }
+
+    pub fn subscriber_count(&self) -> usize {
+        self.sender.receiver_count()
+    }
+}
+
+impl Default for PresenceBus {
     fn default() -> Self {
         Self::new(1024)
     }
