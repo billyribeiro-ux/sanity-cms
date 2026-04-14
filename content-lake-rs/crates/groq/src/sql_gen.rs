@@ -91,9 +91,7 @@ pub fn plan(ast: &Expr, params: &Map<String, Value>) -> Result<QueryPlan, PlanEr
     // Unwrap `count(x)` at the top level: plan `x` but mark the plan so the
     // executor returns a single number.
     let (root, count_only) = match ast {
-        Expr::FuncCall(name, args) if name == "count" && args.len() == 1 => {
-            (args[0].clone(), true)
-        }
+        Expr::FuncCall(name, args) if name == "count" && args.len() == 1 => (args[0].clone(), true),
         other => (other.clone(), false),
     };
 
@@ -759,7 +757,10 @@ mod tests {
         let spec = ProjectionSpec {
             fields: vec![
                 ("title".into(), ProjectionSource::Ident("title".into())),
-                ("slug".into(), ProjectionSource::Path(vec!["slug".into(), "current".into()])),
+                (
+                    "slug".into(),
+                    ProjectionSource::Path(vec!["slug".into(), "current".into()]),
+                ),
             ],
         };
         let out = apply_projection(&spec, &doc);
@@ -775,20 +776,14 @@ mod tests {
 
     #[test]
     fn in_with_array_literal() {
-        let p = do_plan(
-            r#"*[_type in ["page", "post", "note"]]"#,
-            json!({}),
-        );
+        let p = do_plan(r#"*[_type in ["page", "post", "note"]]"#, json!({}));
         assert!(p.sql.contains("IN ($2, $3, $4)"));
         assert_eq!(p.bindings.len(), 3);
     }
 
     #[test]
     fn in_with_param_array() {
-        let p = do_plan(
-            r#"*[_id in $ids]"#,
-            json!({"ids": ["a", "b"]}),
-        );
+        let p = do_plan(r#"*[_id in $ids]"#, json!({"ids": ["a", "b"]}));
         assert!(p.sql.contains("IN"));
         assert_eq!(p.bindings.len(), 2);
     }
@@ -825,7 +820,10 @@ mod tests {
         let p = do_plan(r#"*[_type == "page"]{author->name}"#, json!({}));
         let spec = p.projection.expect("projection");
         match &spec.fields[0].1 {
-            ProjectionSource::Deref { path, sub_projection } => {
+            ProjectionSource::Deref {
+                path,
+                sub_projection,
+            } => {
                 assert_eq!(path, &vec!["author".to_string()]);
                 assert!(sub_projection.is_some());
             }

@@ -9,16 +9,16 @@
 use std::path::{Path as StdPath, PathBuf};
 
 use axum::{
-    Router,
     body::Bytes,
     extract::{FromRequest, Multipart, Path, Query, Request, State},
-    http::{HeaderMap, HeaderValue, StatusCode, header},
+    http::{header, HeaderMap, HeaderValue, StatusCode},
     response::{IntoResponse, Json, Response},
     routing::{get, post},
+    Router,
 };
 use chrono::Utc;
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use sha1::{Digest, Sha1};
 use uuid::Uuid;
 
@@ -137,9 +137,7 @@ async fn upload_asset(
         hex_lower(&digest)
     };
 
-    let original_filename = filename_override
-        .or(q.filename.clone())
-        .unwrap_or_default();
+    let original_filename = filename_override.or(q.filename.clone()).unwrap_or_default();
     let ext = extension_from_filename(&original_filename).unwrap_or_else(|| "bin".to_string());
     let mime = mime_for_extension(&ext);
     let size = body.len();
@@ -163,11 +161,15 @@ async fn upload_asset(
             .map_err(|e| ApiError::Internal(format!("write asset: {e}")))?;
     }
 
-    // Dimensions are cosmetic — we embed a placeholder so the id shape still
-    // matches what Studio's asset resolver expects. Image asset ids include
-    // `WxH`; file asset ids don't.
+    // For images, probe the dimensions so the asset id embeds the real
+    // `WxH` (Sanity convention — Studio's asset resolver parses this).
+    // A failure to probe degrades to "0x0" rather than failing the upload.
+    let dims = match kind {
+        AssetKind::Image => probe_image_dimensions(&body).unwrap_or_else(|| "0x0".to_string()),
+        AssetKind::File => String::new(),
+    };
     let asset_id = match kind {
-        AssetKind::Image => format!("{}-{sha1_hex}-0x0-{ext}", kind.id_prefix()),
+        AssetKind::Image => format!("{}-{sha1_hex}-{dims}-{ext}", kind.id_prefix()),
         AssetKind::File => format!("{}-{sha1_hex}-{ext}", kind.id_prefix()),
     };
 
@@ -217,19 +219,29 @@ async fn upload_asset(
     .await
     .map_err(map_repo_err)?;
 
-    // Broadcast a mutation event so live listeners see the new asset.
+    // Broadcast a mutation event so live listeners (local + cross-node) see
+    // the new asset. Durable publish fans out via Postgres LISTEN/NOTIFY;
+    // failures are logged but never fail the upload.
     let tx_id = Uuid::now_v7().as_simple().to_string();
     let result = crate::routes::doc::document_to_wire(stored.clone()).ok();
-    let _ = state
+    if let Err(e) = state
         .event_bus()
-        .publish(ContentLakeEvent::DocumentMutation(DocumentMutationEvent {
-            dataset_id,
-            document_id: asset_id.clone(),
-            transaction_id: tx_id,
-            transition: "update".to_string(),
-            mutations: json!([{"createOrReplace": content}]),
-            result,
-        }));
+        .publish_durable(
+            state.pool(),
+            ContentLakeEvent::DocumentMutation(DocumentMutationEvent {
+                dataset_id,
+                document_id: asset_id.clone(),
+                transaction_id: tx_id,
+                transition: "update".to_string(),
+                mutations: json!([{"createOrReplace": content}]),
+                result,
+                node_id: state.node_id(),
+            }),
+        )
+        .await
+    {
+        tracing::warn!(error = %e, "durable asset event publish failed");
+    }
 
     // Sanity's upload response shape.
     let document = json!({
@@ -252,18 +264,12 @@ async fn upload_asset(
 }
 
 #[tracing::instrument(skip(state))]
-async fn serve_image(
-    state: State<AppState>,
-    path: Path<String>,
-) -> ApiResult<Response> {
+async fn serve_image(state: State<AppState>, path: Path<String>) -> ApiResult<Response> {
     serve_asset(state, path, "images").await
 }
 
 #[tracing::instrument(skip(state))]
-async fn serve_file(
-    state: State<AppState>,
-    path: Path<String>,
-) -> ApiResult<Response> {
+async fn serve_file(state: State<AppState>, path: Path<String>) -> ApiResult<Response> {
     serve_asset(state, path, "files").await
 }
 
@@ -341,7 +347,21 @@ async fn read_multipart_body(request: Request) -> ApiResult<(Bytes, Option<Strin
         return Ok((bytes, filename));
     }
 
-    Err(ApiError::BadRequest("no file field in multipart body".into()))
+    Err(ApiError::BadRequest(
+        "no file field in multipart body".into(),
+    ))
+}
+
+/// Best-effort width × height probe for the common web image formats.
+/// Returns `None` for SVG (text-based, format-specific parsing out of scope),
+/// unknown/unsupported formats, or malformed data — the caller falls back to
+/// a placeholder so a degraded-but-working upload path is always available.
+fn probe_image_dimensions(bytes: &[u8]) -> Option<String> {
+    let reader = image::ImageReader::new(std::io::Cursor::new(bytes))
+        .with_guessed_format()
+        .ok()?;
+    let (w, h) = reader.into_dimensions().ok()?;
+    Some(format!("{w}x{h}"))
 }
 
 fn hex_lower(bytes: &[u8]) -> String {

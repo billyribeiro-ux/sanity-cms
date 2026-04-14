@@ -13,29 +13,22 @@
 use std::{convert::Infallible, time::Duration};
 
 use axum::{
-    Router,
     extract::{Path, State},
     response::{
-        Sse,
         sse::{Event, KeepAlive},
+        Sse,
     },
     routing::get,
+    Router,
 };
 use futures::stream::{self, Stream, StreamExt};
 use serde_json::json;
-use tokio_stream::wrappers::{BroadcastStream, errors::BroadcastStreamRecvError};
+use tokio_stream::wrappers::{errors::BroadcastStreamRecvError, BroadcastStream};
 use uuid::Uuid;
 
-use crate::{
-    error::ApiResult,
-    routes::doc::map_repo_err,
-    state::AppState,
-};
+use crate::{error::ApiResult, routes::doc::map_repo_err, state::AppState};
 
-use content_lake_core::{
-    document::repo,
-    events::types::ContentLakeEvent,
-};
+use content_lake_core::{document::repo, events::types::ContentLakeEvent};
 
 pub fn routes() -> Router<AppState> {
     Router::new().route("/v1/data/listen/{dataset}", get(listen))
@@ -71,21 +64,14 @@ async fn listen(
                     "mutations": ev.mutations,
                     "result": ev.result,
                 });
-                Some(
-                    Event::default()
-                        .event("mutation")
-                        .data(payload.to_string()),
-                )
+                Some(Event::default().event("mutation").data(payload.to_string()))
             }
             Ok(_) => None,
-            Err(BroadcastStreamRecvError::Lagged(n)) => Some(
-                Event::default()
-                    .event("reconnect")
-                    .data(
-                        json!({ "reason": format!("listener lagged by {n} events") })
-                            .to_string(),
-                    ),
-            ),
+            Err(BroadcastStreamRecvError::Lagged(n)) => {
+                Some(Event::default().event("reconnect").data(
+                    json!({ "reason": format!("listener lagged by {n} events") }).to_string(),
+                ))
+            }
         };
         async move { value.map(Ok::<_, Infallible>) }
     });

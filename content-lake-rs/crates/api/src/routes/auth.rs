@@ -87,12 +87,7 @@ async fn login_password(
         .map_err(|e| ApiError::Internal(format!("auth backend error: {e}")))?
         .ok_or(ApiError::Unauthorized)?;
 
-    let token = issue_token(
-        &state.config().jwt_secret,
-        user.id,
-        &user.email,
-        &user.role,
-    )?;
+    let token = issue_token(&state.config().jwt_secret, user.id, &user.email, &user.role)?;
 
     Ok(Json(json!({
         "token": token,
@@ -142,7 +137,10 @@ async fn users_me(
         let token = headers
             .get(axum::http::header::AUTHORIZATION)
             .and_then(|v| v.to_str().ok())
-            .and_then(|s| s.strip_prefix("Bearer ").or_else(|| s.strip_prefix("bearer ")))
+            .and_then(|s| {
+                s.strip_prefix("Bearer ")
+                    .or_else(|| s.strip_prefix("bearer "))
+            })
             .map(str::trim)
             .filter(|s| !s.is_empty())
             .ok_or(ApiError::Unauthorized)?;
@@ -154,14 +152,18 @@ async fn users_me(
     // If AUTH_DISABLED produced the synthetic admin (nil UUID), respond with
     // the synthetic payload — no database lookup needed.
     if user_id.is_nil() {
-        return Ok(Json(serde_json::to_value(UserPayload::synthetic_admin()).unwrap()));
+        return Ok(Json(
+            serde_json::to_value(UserPayload::synthetic_admin()).unwrap(),
+        ));
     }
 
     match core_auth::get_user(state.pool(), user_id)
         .await
         .map_err(|e| ApiError::Internal(format!("user lookup failed: {e}")))?
     {
-        Some(u) => Ok(Json(serde_json::to_value(UserPayload::from_core(&u)).unwrap())),
+        Some(u) => Ok(Json(
+            serde_json::to_value(UserPayload::from_core(&u)).unwrap(),
+        )),
         None => {
             // Token is cryptographically valid but the user no longer exists.
             // Fall back to the token's own claims so Studio can still render,
@@ -197,7 +199,9 @@ async fn users_by_id(
         .await
         .map_err(|e| ApiError::Internal(format!("user lookup failed: {e}")))?
     {
-        Some(u) => Ok(Json(serde_json::to_value(UserPayload::from_core(&u)).unwrap())),
+        Some(u) => Ok(Json(
+            serde_json::to_value(UserPayload::from_core(&u)).unwrap(),
+        )),
         None => Err(ApiError::NotFound(format!("user {id} not found"))),
     }
 }

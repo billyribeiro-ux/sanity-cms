@@ -72,7 +72,11 @@ pub struct DeleteMutation {
 #[serde(rename_all = "camelCase")]
 pub struct PatchMutation {
     pub id: String,
-    #[serde(default, rename = "ifRevisionID", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        rename = "ifRevisionID",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub if_revision_id: Option<String>,
     #[serde(flatten)]
     pub operations: PatchOperations,

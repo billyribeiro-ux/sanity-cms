@@ -330,11 +330,7 @@ where
 }
 
 /// Soft-delete a document. Returns `true` when a row was affected.
-pub async fn delete_document<'e, E>(
-    executor: E,
-    dataset_id: Uuid,
-    id: &str,
-) -> RepoResult<bool>
+pub async fn delete_document<'e, E>(executor: E, dataset_id: Uuid, id: &str) -> RepoResult<bool>
 where
     E: Executor<'e, Database = Postgres>,
 {
@@ -372,6 +368,58 @@ where
     .await?;
 
     Ok(row.map(|(r,)| r))
+}
+
+/// Append a committed transaction to the `transactions` + `transaction_documents`
+/// tables so the `/v1/history/{dataset}/{id}` endpoint has something to return.
+///
+/// Intended to be called inside the same Postgres transaction that wrote the
+/// document(s). Called once per HTTP mutate request, not once per mutation,
+/// so `mutations` carries the full JSON array.
+///
+/// `touched` is the list of `(document_id, previous_rev, result_rev)` tuples
+/// affected by this transaction — `previous_rev` is `None` for creates,
+/// `result_rev` is `None` for deletes.
+pub async fn append_transaction(
+    conn: &mut sqlx::PgConnection,
+    dataset_id: Uuid,
+    transaction_id: &str,
+    author: Option<&str>,
+    mutations: &Value,
+    touched: &[(String, Option<String>, Option<String>)],
+) -> RepoResult<()> {
+    let tx_uuid: Uuid = sqlx::query_scalar(
+        r#"
+        INSERT INTO transactions (dataset_id, transaction_id, author, mutations)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id
+        "#,
+    )
+    .bind(dataset_id)
+    .bind(transaction_id)
+    .bind(author)
+    .bind(mutations)
+    .fetch_one(&mut *conn)
+    .await?;
+
+    for (doc_id, prev, result) in touched {
+        sqlx::query(
+            r#"
+            INSERT INTO transaction_documents
+              (transaction_id, document_id, previous_rev, result_rev)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT DO NOTHING
+            "#,
+        )
+        .bind(tx_uuid)
+        .bind(doc_id)
+        .bind(prev.as_deref())
+        .bind(result.as_deref())
+        .execute(&mut *conn)
+        .await?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

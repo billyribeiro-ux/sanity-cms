@@ -8,15 +8,15 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 use axum::{
-    Json, Router,
     extract::{Path, Query, State},
     routing::get,
+    Json, Router,
 };
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
-use serde_json::{Map, Value, json};
-use sqlx::Row;
+use serde_json::{json, Map, Value};
 use sqlx::types::Uuid;
+use sqlx::Row;
 
 use crate::{
     error::{ApiError, ApiResult},
@@ -110,10 +110,7 @@ async fn run_query(
         let updated_at: sqlx::types::time::OffsetDateTime =
             row.try_get("updated_at").map_err(ApiError::Database)?;
 
-        let mut obj = content
-            .as_object()
-            .cloned()
-            .unwrap_or_else(Map::new);
+        let mut obj = content.as_object().cloned().unwrap_or_else(Map::new);
         obj.insert("_id".into(), Value::String(document_id));
         obj.insert("_type".into(), Value::String(doc_type));
         obj.insert("_rev".into(), Value::String(revision));
@@ -200,8 +197,14 @@ async fn resolve_derefs(
         obj.insert("_id".into(), Value::String(id.clone()));
         obj.insert("_type".into(), Value::String(d._type));
         obj.insert("_rev".into(), Value::String(d._rev));
-        obj.insert("_createdAt".into(), Value::String(odt_to_iso_dt(d.created_at)));
-        obj.insert("_updatedAt".into(), Value::String(odt_to_iso_dt(d.updated_at)));
+        obj.insert(
+            "_createdAt".into(),
+            Value::String(odt_to_iso_dt(d.created_at)),
+        );
+        obj.insert(
+            "_updatedAt".into(),
+            Value::String(odt_to_iso_dt(d.updated_at)),
+        );
         by_id.insert(id, Value::Object(obj));
     }
 

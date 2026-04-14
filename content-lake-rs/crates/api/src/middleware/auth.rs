@@ -109,7 +109,9 @@ pub async fn auth_middleware(
     let config = state.config();
 
     if config.auth_disabled {
-        request.extensions_mut().insert(CurrentUser::synthetic_admin());
+        request
+            .extensions_mut()
+            .insert(CurrentUser::synthetic_admin());
         return Ok(next.run(request).await);
     }
 
@@ -155,7 +157,9 @@ fn is_exempt(method: &Method, path: &str) -> bool {
 
 fn bearer_token(headers: &axum::http::HeaderMap) -> Option<&str> {
     let raw = headers.get(header::AUTHORIZATION)?.to_str().ok()?;
-    let rest = raw.strip_prefix("Bearer ").or_else(|| raw.strip_prefix("bearer "))?;
+    let rest = raw
+        .strip_prefix("Bearer ")
+        .or_else(|| raw.strip_prefix("bearer "))?;
     let trimmed = rest.trim();
     if trimmed.is_empty() {
         None

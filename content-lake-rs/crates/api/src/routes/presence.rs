@@ -29,18 +29,18 @@
 use std::sync::{Arc, Mutex};
 
 use axum::{
-    Router,
     extract::{
-        Path, State, WebSocketUpgrade,
         ws::{Message, WebSocket},
+        Path, State, WebSocketUpgrade,
     },
     response::Response,
     routing::get,
+    Router,
 };
 use chrono::Utc;
 use futures::{SinkExt, StreamExt};
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use uuid::Uuid;
 
@@ -120,7 +120,9 @@ async fn handle_ws(state: AppState, dataset: String, socket: WebSocket) {
             let mut sock = socket;
             let _ = sock
                 .send(Message::Text(
-                    json!({"type":"error","message":format!("{e}")}).to_string().into(),
+                    json!({"type":"error","message":format!("{e}")})
+                        .to_string()
+                        .into(),
                 ))
                 .await;
             let _ = sock.close().await;
@@ -142,13 +144,17 @@ async fn handle_ws(state: AppState, dataset: String, socket: WebSocket) {
     // Send welcome + initial snapshot of who's currently here.
     let _ = tx
         .send(Message::Text(
-            json!({"type":"welcome","sessionId":session_id}).to_string().into(),
+            json!({"type":"welcome","sessionId":session_id})
+                .to_string()
+                .into(),
         ))
         .await;
     let initial = snap().snapshot(dataset_id);
     let _ = tx
         .send(Message::Text(
-            json!({"type":"initial","sessions":initial}).to_string().into(),
+            json!({"type":"initial","sessions":initial})
+                .to_string()
+                .into(),
         ))
         .await;
 
@@ -190,7 +196,10 @@ async fn handle_ws(state: AppState, dataset: String, socket: WebSocket) {
             continue;
         };
         match client {
-            ClientMsg::State { document_id, selection } => {
+            ClientMsg::State {
+                document_id,
+                selection,
+            } => {
                 let ps = PresenceState {
                     dataset_id,
                     session_id: session_id.clone(),
@@ -200,9 +209,16 @@ async fn handle_ws(state: AppState, dataset: String, socket: WebSocket) {
                     document_id,
                     selection,
                     timestamp: Utc::now(),
+                    node_id: state.node_id(),
                 };
                 snap().update(ps.clone());
-                let _ = state.presence_bus().publish(PresenceEvent::State(ps));
+                if let Err(e) = state
+                    .presence_bus()
+                    .publish_durable(state.pool(), PresenceEvent::State(ps))
+                    .await
+                {
+                    tracing::warn!(error = %e, "durable presence publish failed");
+                }
             }
             ClientMsg::Heartbeat => { /* no-op */ }
         }
@@ -210,9 +226,18 @@ async fn handle_ws(state: AppState, dataset: String, socket: WebSocket) {
 
     // Cleanup: remove from snapshot, broadcast disappear, tear down relay.
     snap().remove(&session_id);
-    let _ = state
+    if let Err(e) = state
         .presence_bus()
-        .publish(PresenceEvent::Disappear { session_id });
+        .publish_durable(
+            state.pool(),
+            PresenceEvent::Disappear {
+                session_id: session_id.clone(),
+            },
+        )
+        .await
+    {
+        tracing::warn!(error = %e, "durable presence disappear publish failed");
+    }
     relay_task.abort();
 }
 
@@ -230,6 +255,7 @@ mod tests {
             document_id: None,
             selection: None,
             timestamp: chrono::Utc::now(),
+            node_id: Uuid::nil(),
         }
     }
 

@@ -74,10 +74,8 @@ impl AppConfig {
             auth_disabled: env::var("AUTH_DISABLED")
                 .map(|v| matches!(v.as_str(), "1" | "true" | "yes"))
                 .unwrap_or(false),
-            admin_email: env::var("ADMIN_EMAIL")
-                .unwrap_or_else(|_| "admin@localhost".to_string()),
-            admin_password: env::var("ADMIN_PASSWORD")
-                .unwrap_or_else(|_| "admin".to_string()),
+            admin_email: env::var("ADMIN_EMAIL").unwrap_or_else(|_| "admin@localhost".to_string()),
+            admin_password: env::var("ADMIN_PASSWORD").unwrap_or_else(|_| "admin".to_string()),
         })
     }
 

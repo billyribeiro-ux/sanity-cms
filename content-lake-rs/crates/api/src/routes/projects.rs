@@ -44,9 +44,7 @@ async fn get_project(
 
     let id: uuid::Uuid = row.try_get("id").map_err(ApiError::from)?;
     let name: String = row.try_get("name").map_err(ApiError::from)?;
-    let created_at: String = row
-        .try_get("created_at_rfc3339")
-        .map_err(ApiError::from)?;
+    let created_at: String = row.try_get("created_at_rfc3339").map_err(ApiError::from)?;
 
     Ok(Json(json!({
         "id": id.to_string(),
