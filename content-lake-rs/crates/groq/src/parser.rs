@@ -66,34 +66,75 @@ impl Parser {
                     self.advance();
                     let filter = self.parse_filter_expr()?;
                     self.expect(&Token::RBracket)?;
-                    if self.peek() == &Token::LBrace {
-                        self.advance();
-                        let projection = self.parse_projection()?;
-                        self.expect(&Token::RBrace)?;
-                        Ok(Expr::Pipeline(vec![
-                            Expr::Everything,
-                            Expr::Filter(Box::new(filter)),
-                            Expr::Projection(projection),
-                        ]))
-                    } else if self.peek() == &Token::Pipe {
-                        self.advance();
-                        let pipe = self.parse_pipe_expr()?;
-                        Ok(Expr::Pipeline(vec![
-                            Expr::Everything,
-                            Expr::Filter(Box::new(filter)),
-                            pipe,
-                        ]))
-                    } else {
-                        Ok(Expr::Pipeline(vec![
-                            Expr::Everything,
-                            Expr::Filter(Box::new(filter)),
-                        ]))
+                    let mut stages: Vec<Expr> =
+                        vec![Expr::Everything, Expr::Filter(Box::new(filter))];
+                    loop {
+                        match self.peek() {
+                            Token::LBrace => {
+                                self.advance();
+                                let projection = self.parse_projection()?;
+                                self.expect(&Token::RBrace)?;
+                                stages.push(Expr::Projection(projection));
+                            }
+                            Token::Pipe => {
+                                self.advance();
+                                let pipe = self.parse_pipe_expr()?;
+                                stages.push(pipe);
+                            }
+                            Token::LBracket => {
+                                self.advance();
+                                let slice = self.parse_slice_body()?;
+                                self.expect(&Token::RBracket)?;
+                                stages.push(slice);
+                            }
+                            _ => break,
+                        }
                     }
+                    Ok(Expr::Pipeline(stages))
                 } else {
                     Ok(Expr::Everything)
                 }
             }
             _ => self.parse_filter_expr(),
+        }
+    }
+
+    /// Parse the body of a `[...]` slice: either an integer index or a
+    /// `start..end` / `start...end` range. Produces an [`Expr::Slice`].
+    fn parse_slice_body(&mut self) -> Result<Expr, ParseError> {
+        let start = match self.peek().clone() {
+            Token::Integer(n) => {
+                self.advance();
+                n
+            }
+            other => {
+                return Err(ParseError::UnexpectedToken {
+                    found: format!("{other:?}"),
+                    expected: "integer".to_string(),
+                });
+            }
+        };
+        match self.peek().clone() {
+            Token::DotDot | Token::Ellipsis => {
+                self.advance();
+                let end = match self.peek().clone() {
+                    Token::Integer(n) => {
+                        self.advance();
+                        n
+                    }
+                    other => {
+                        return Err(ParseError::UnexpectedToken {
+                            found: format!("{other:?}"),
+                            expected: "integer".to_string(),
+                        });
+                    }
+                };
+                Ok(Expr::Slice(Box::new(Expr::This), start, end))
+            }
+            _ => {
+                // Single-element index `[n]` — represent as [n..n].
+                Ok(Expr::Slice(Box::new(Expr::This), start, start))
+            }
         }
     }
 
@@ -228,6 +269,10 @@ impl Parser {
             Token::Caret => {
                 self.advance();
                 Ok(Expr::Parent)
+            }
+            Token::Param(name) => {
+                self.advance();
+                Ok(Expr::Param(name))
             }
             Token::Not => {
                 self.advance();

@@ -1,8 +1,11 @@
+pub mod assets;
 pub mod auth;
 pub mod doc;
 pub mod health;
+pub mod listen;
 pub mod mutate;
 pub mod projects;
+pub mod query;
 
 use axum::Router;
 
@@ -16,9 +19,9 @@ pub fn build_router(state: AppState) -> Router {
         .merge(projects::routes())
         .merge(doc::routes())
         .merge(mutate::routes())
-        // Future: .merge(query::routes())
-        // Future: .merge(listen::routes())
-        // Future: .merge(assets::routes())
+        .merge(listen::routes())
+        .merge(assets::routes())
+        .merge(query::routes())
         // Future: .merge(presence::routes())
         .with_state(state)
 }

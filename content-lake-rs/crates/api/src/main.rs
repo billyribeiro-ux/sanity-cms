@@ -62,6 +62,22 @@ async fn main() -> anyhow::Result<()> {
         "Bootstrap project/dataset ready"
     );
 
+    // Bootstrap an admin user on first startup. If the users table already
+    // has rows, this is a no-op.
+    let admin_id =
+        content_lake_core::auth::ensure_admin(&pool, &config.admin_email, &config.admin_password)
+            .await
+            .map_err(|e| anyhow::anyhow!("admin bootstrap failed: {e}"))?;
+    tracing::info!(admin_id = %admin_id, email = %config.admin_email, "Admin user ready");
+    if config.admin_password == "admin" {
+        tracing::warn!(
+            "Using default admin password \u{2014} set ADMIN_PASSWORD in production"
+        );
+    }
+    if config.auth_disabled {
+        tracing::warn!("AUTH_DISABLED=1 \u{2014} skipping JWT verification on all requests");
+    }
+
     // Create event bus
     let event_bus = EventBus::new(config.event_bus_capacity);
 
@@ -69,7 +85,11 @@ async fn main() -> anyhow::Result<()> {
     let state = state::AppState::new(pool, config.clone(), event_bus);
 
     // Build router with middleware
-    let app = routes::build_router(state)
+    let app = routes::build_router(state.clone())
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            middleware::auth::auth_middleware,
+        ))
         .layer(middleware::request_tracing::trace_layer())
         .layer(middleware::cors::cors_layer());
 

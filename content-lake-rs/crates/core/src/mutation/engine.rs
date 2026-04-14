@@ -11,7 +11,8 @@
 //! - `unset`: remove fields or array elements at the given paths.
 //! - `inc` / `dec`: atomic numeric increment/decrement; errors on non-numbers.
 //! - `insert`: `{before|after|replace: "path[idx]", items: [...]}`.
-//! - `diffMatchPatch`: currently stubbed (returns [`MutationError::Unsupported`]).
+//! - `diffMatchPatch`: apply a Google diff-match-patch patch string to a string
+//!   value at a JSON path (used by Studio for Portable Text/rich-text edits).
 //! - `ifRevisionID`: optimistic-concurrency guard checked before any op.
 
 use chrono::{DateTime, Utc};
@@ -229,11 +230,9 @@ fn apply_patch_ops(json: &mut Value, ops: &PatchOperations) -> Result<(), Mutati
         apply_insert(json, ins)?;
     }
 
-    // 6. diffMatchPatch — not yet implemented
-    if ops.diff_match_patch.is_some() {
-        return Err(MutationError::Unsupported(
-            "diffMatchPatch is not yet implemented".into(),
-        ));
+    // 6. diffMatchPatch — apply Google DMP patch strings to string values.
+    if let Some(dmp_ops) = &ops.diff_match_patch {
+        apply_diff_match_patch(json, dmp_ops)?;
     }
 
     // 7. merge — shallow object merge at a path
@@ -247,6 +246,58 @@ fn apply_patch_ops(json: &mut Value, ops: &PatchOperations) -> Result<(), Mutati
             jp::set_value(json, path, merged)
                 .map_err(|e| MutationError::InvalidPath(format!("{path}: {e}")))?;
         }
+    }
+
+    Ok(())
+}
+
+fn apply_diff_match_patch(json: &mut Value, ops: &Value) -> Result<(), MutationError> {
+    let obj = ops.as_object().ok_or_else(|| {
+        MutationError::InvalidOperation("`diffMatchPatch` must be an object of path→patch".into())
+    })?;
+
+    let dmp = dmp::new();
+
+    for (path, patch_value) in obj {
+        let patch_str = patch_value.as_str().ok_or_else(|| {
+            MutationError::InvalidOperation(format!(
+                "diffMatchPatch patch at `{path}` must be a string"
+            ))
+        })?;
+
+        let current = jp::get_value(json, path).ok_or_else(|| {
+            MutationError::InvalidOperation(format!(
+                "diffMatchPatch target `{path}` does not exist"
+            ))
+        })?;
+
+        let source = current.as_str().ok_or_else(|| {
+            MutationError::InvalidOperation(format!(
+                "diffMatchPatch target `{path}` is not a string"
+            ))
+        })?;
+
+        let patches = dmp.patch_from_text(patch_str.to_string()).map_err(|e| {
+            MutationError::InvalidOperation(format!(
+                "diff-match-patch failed at `{path}`: invalid patch text ({e:?})"
+            ))
+        })?;
+
+        let (new_chars, results) = dmp.patch_apply(&patches, source).map_err(|e| {
+            MutationError::InvalidOperation(format!(
+                "diff-match-patch failed at `{path}`: {e:?}"
+            ))
+        })?;
+
+        if results.iter().any(|ok| !ok) {
+            return Err(MutationError::InvalidOperation(format!(
+                "diff-match-patch failed at `{path}`: one or more hunks did not apply"
+            )));
+        }
+
+        let new_text: String = new_chars.into_iter().collect();
+        jp::set_value(json, path, Value::String(new_text))
+            .map_err(|e| MutationError::InvalidPath(format!("{path}: {e}")))?;
     }
 
     Ok(())
@@ -670,14 +721,100 @@ mod tests {
         assert!(matches!(err, MutationError::NotFound(_)));
     }
 
+    fn make_dmp_patch(before: &str, after: &str) -> String {
+        let dmp = dmp::new();
+        let patches = dmp.patch_make1(before, after);
+        dmp.patch_to_text(&patches)
+    }
+
     #[test]
-    fn patch_diff_match_patch_unsupported() {
-        let m = parse_mut(
-            r#"{"patch": {"id": "a", "diffMatchPatch": {"body": "@@..."}}}"#,
+    fn patch_diff_match_patch_simple_insert() {
+        let patch = make_dmp_patch("hello", "hello world");
+        let mutation = serde_json::json!({
+            "patch": {
+                "id": "a",
+                "diffMatchPatch": {"body": patch},
+            }
+        });
+        let m: Mutation = serde_json::from_value(mutation).unwrap();
+        let existing = doc("a", json!({"body": "hello"}));
+        let r = apply_mutation(Some(&existing), &m, "rev2", Utc::now()).unwrap();
+        let d = match r { MutationResult::Updated(d) => d, _ => panic!() };
+        assert_eq!(d.content.get("body"), Some(&json!("hello world")));
+    }
+
+    #[test]
+    fn patch_diff_match_patch_nested_path() {
+        let patch = make_dmp_patch("old text here", "new text here");
+        let mutation = serde_json::json!({
+            "patch": {
+                "id": "a",
+                "diffMatchPatch": {"body[0].children[1].text": patch},
+            }
+        });
+        let m: Mutation = serde_json::from_value(mutation).unwrap();
+        let existing = doc(
+            "a",
+            json!({
+                "body": [
+                    {"children": [
+                        {"text": "first"},
+                        {"text": "old text here"},
+                    ]}
+                ]
+            }),
         );
-        let existing = doc("a", json!({"body": "hi"}));
+        let r = apply_mutation(Some(&existing), &m, "rev2", Utc::now()).unwrap();
+        let d = match r { MutationResult::Updated(d) => d, _ => panic!() };
+        let body = d.content.get("body").unwrap();
+        assert_eq!(
+            body.get(0).unwrap().get("children").unwrap().get(1).unwrap().get("text"),
+            Some(&json!("new text here"))
+        );
+    }
+
+    #[test]
+    fn patch_diff_match_patch_non_string_errors() {
+        let patch = make_dmp_patch("hello", "hello world");
+        let mutation = serde_json::json!({
+            "patch": {
+                "id": "a",
+                "diffMatchPatch": {"count": patch},
+            }
+        });
+        let m: Mutation = serde_json::from_value(mutation).unwrap();
+        let existing = doc("a", json!({"count": 42}));
         let err = apply_mutation(Some(&existing), &m, "rev2", Utc::now()).unwrap_err();
-        assert!(matches!(err, MutationError::Unsupported(_)));
+        assert!(matches!(err, MutationError::InvalidOperation(_)));
+    }
+
+    #[test]
+    fn patch_diff_match_patch_missing_field_errors() {
+        let patch = make_dmp_patch("hello", "hello world");
+        let mutation = serde_json::json!({
+            "patch": {
+                "id": "a",
+                "diffMatchPatch": {"missing": patch},
+            }
+        });
+        let m: Mutation = serde_json::from_value(mutation).unwrap();
+        let existing = doc("a", json!({"body": "hello"}));
+        let err = apply_mutation(Some(&existing), &m, "rev2", Utc::now()).unwrap_err();
+        assert!(matches!(err, MutationError::InvalidOperation(_)));
+    }
+
+    #[test]
+    fn patch_diff_match_patch_invalid_patch_text_errors() {
+        let mutation = serde_json::json!({
+            "patch": {
+                "id": "a",
+                "diffMatchPatch": {"body": "not a valid patch"},
+            }
+        });
+        let m: Mutation = serde_json::from_value(mutation).unwrap();
+        let existing = doc("a", json!({"body": "hello"}));
+        let err = apply_mutation(Some(&existing), &m, "rev2", Utc::now()).unwrap_err();
+        assert!(matches!(err, MutationError::InvalidOperation(_)));
     }
 
     #[test]

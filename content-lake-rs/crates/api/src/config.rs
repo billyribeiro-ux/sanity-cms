@@ -24,6 +24,19 @@ pub struct AppConfig {
     pub bootstrap_project: String,
     /// Default dataset name to ensure exists on startup.
     pub bootstrap_dataset: String,
+    /// Directory where uploaded assets are stored on disk.
+    pub assets_dir: String,
+    /// Public base URL used to build absolute asset URLs.
+    pub public_base_url: String,
+    /// When true, auth middleware attaches a synthetic admin user to every
+    /// request instead of verifying JWTs. Toggled via `AUTH_DISABLED=1`.
+    pub auth_disabled: bool,
+    /// Email of the bootstrap admin user, created on first startup if the
+    /// `users` table is empty. Default: `admin@localhost`.
+    pub admin_email: String,
+    /// Password of the bootstrap admin user. A WARN is logged if this is left
+    /// at the default of `admin`.
+    pub admin_password: String,
 }
 
 impl AppConfig {
@@ -55,6 +68,16 @@ impl AppConfig {
                 .unwrap_or_else(|_| "default".to_string()),
             bootstrap_dataset: env::var("BOOTSTRAP_DATASET")
                 .unwrap_or_else(|_| "production".to_string()),
+            assets_dir: env::var("ASSETS_DIR").unwrap_or_else(|_| "./data/assets".to_string()),
+            public_base_url: env::var("PUBLIC_BASE_URL")
+                .unwrap_or_else(|_| "http://localhost:3030".to_string()),
+            auth_disabled: env::var("AUTH_DISABLED")
+                .map(|v| matches!(v.as_str(), "1" | "true" | "yes"))
+                .unwrap_or(false),
+            admin_email: env::var("ADMIN_EMAIL")
+                .unwrap_or_else(|_| "admin@localhost".to_string()),
+            admin_password: env::var("ADMIN_PASSWORD")
+                .unwrap_or_else(|_| "admin".to_string()),
         })
     }
 
