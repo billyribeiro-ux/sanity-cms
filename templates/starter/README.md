@@ -7,8 +7,9 @@ A minimal Sanity Studio wired up to `@cms-kit/schemas` and `@cms-kit/studio-conf
 From the cms-kit workspace:
 
 ```bash
-pnpm add cp templates/starter/.env.example templates/starter/.env
+cp templates/starter/.env.example templates/starter/.env
 # edit .env with your Sanity projectId + dataset
+pnpm install
 pnpm --filter starter dev
 ```
 
@@ -20,7 +21,8 @@ Studio opens at http://localhost:3333.
 cp -r cms-kit/templates/starter ~/projects/client-xyz-studio
 cd ~/projects/client-xyz-studio
 # edit package.json name, set your projectId/dataset
-pnpm add pnpm dev
+pnpm install
+pnpm dev
 ```
 
 ## Add client-specific schemas

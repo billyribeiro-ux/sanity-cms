@@ -4,6 +4,8 @@ A personal, fully self-hosted headless CMS built on Sanity Studio + a Rust
 Content Lake replica. **Nothing talks to `api.sanity.io`.** All data stays
 on your Postgres, behind your Rust server, rendered by a Studio you control.
 
+For app bootstrap and client onboarding, see `CLIENT_SETUP_GUIDE.md`.
+
 ## What's in the box
 
 ```
@@ -37,7 +39,8 @@ cargo run --bin content-lake-api
 # API is now at http://localhost:3030
 
 # Terminal 2 — Studio
-pnpm add cp templates/starter/.env.example templates/starter/.env
+cp templates/starter/.env.example templates/starter/.env
+pnpm --filter starter install
 pnpm --filter starter dev
 # Studio opens at http://localhost:3333 and talks ONLY to localhost:3030
 ```
@@ -188,7 +191,8 @@ are unaffected — they're inert until a user clicks.
 cp -r templates/starter ~/projects/client-xyz
 cd ~/projects/client-xyz
 # Edit .env with SANITY_STUDIO_API_HOST, projectId, dataset
-pnpm add pnpm dev
+pnpm install
+pnpm dev
 ```
 
 Each client gets their own Postgres (or their own dataset on a shared
