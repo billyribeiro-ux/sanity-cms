@@ -20,6 +20,10 @@ pub struct AppConfig {
     pub event_bus_capacity: usize,
     /// Log level (e.g., "info", "debug", "trace").
     pub log_level: String,
+    /// Default project name used when the Studio does not scope by projectId.
+    pub bootstrap_project: String,
+    /// Default dataset name to ensure exists on startup.
+    pub bootstrap_dataset: String,
 }
 
 impl AppConfig {
@@ -47,6 +51,10 @@ impl AppConfig {
                 .parse()
                 .expect("EVENT_BUS_CAPACITY must be a valid usize"),
             log_level: env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string()),
+            bootstrap_project: env::var("BOOTSTRAP_PROJECT")
+                .unwrap_or_else(|_| "default".to_string()),
+            bootstrap_dataset: env::var("BOOTSTRAP_DATASET")
+                .unwrap_or_else(|_| "production".to_string()),
         })
     }
 
