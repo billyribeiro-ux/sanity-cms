@@ -98,8 +98,34 @@ Content Lake contract for the implemented surface.
 ### Still honestly pending
 
 - **GROQ gaps**: arbitrary subqueries in projections, slice-expressions in filters, `order()` on nested arrays, `pt::text()` and other string helpers
-- **Server-side schema validation** — Studio validates client-side only
+- **Server-side schema validation** — (agent in flight) Studio currently validates client-side only
 - **Hardcoded-URL escape audit** of `@sanity/client` — most CDN/auth redirect URLs route via `apiHost`, but some may still reach `sanity.io`; catch via smoke-test
+
+## Domain guard — why no traffic leaks to Sanity
+
+Even with `apiHost` set, `@sanity/client` and `sanity` still hardcode a
+handful of hosts for telemetry, Sentry, the Media Library, CDN fallback,
+and Canvas links:
+
+| Host | What it does |
+|---|---|
+| `api.sanity.io/vX/intake/tracing` | Telemetry + Sentry error-reporting tunnel |
+| `apicdn.sanity.io` / `sanity-cdn.com` | CDN query fallback |
+| `media.sanity.io` | Media Library frontend |
+| `sentry.sanity.io` | Error reporting |
+| `*.sanity.studio` | Studio hosting redirects |
+
+`defineKitConfig({apiHost: '...'})` installs a global `fetch`/`XMLHttpRequest`
+guard that rejects any request to those hosts with a `451 Blocked` response
+and logs a warning. Every outbound call is either local or third-party of
+your choice — nothing reaches Sanity's servers.
+
+Override with `blockSanityDomains: false` if you deliberately want Media
+Library or Canvas to reach Sanity.io. Add specific hosts back with
+`installSanityDomainGuard({allow: ['media.sanity.io']})`.
+
+Plain documentation `<a href>` links (the Studio's "Learn more" buttons etc.)
+are unaffected — they're inert until a user clicks.
 
 ## Per-client workflow
 

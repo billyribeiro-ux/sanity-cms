@@ -1,6 +1,10 @@
 import {defineConfig, type Config, type PluginOptions, type SchemaTypeDefinition} from 'sanity'
 import {structureTool} from 'sanity/structure'
 import {allSchemaTypes} from '@cms-kit/schemas'
+import {installSanityDomainGuard} from './domainGuard'
+
+export {installSanityDomainGuard} from './domainGuard'
+export type {DomainGuardOptions} from './domainGuard'
 
 export interface KitConfigOptions {
   projectId: string
@@ -30,6 +34,16 @@ export interface KitConfigOptions {
    * `apiHost` is set.
    */
   useProjectHostname?: boolean
+  /**
+   * When `apiHost` is set to a self-hosted URL, install a global `fetch`/XHR
+   * interceptor that blocks any request to Sanity-owned domains (api.sanity.io,
+   * apicdn.sanity.io, media.sanity.io, sanity-cdn.com, sentry.sanity.io, etc.).
+   *
+   * Defaults to `true` when `apiHost` is set, `false` otherwise. Turn off with
+   * `blockSanityDomains: false` if you deliberately want Media Library or
+   * Canvas to reach Sanity's hosted services.
+   */
+  blockSanityDomains?: boolean
 }
 
 /**
@@ -57,6 +71,7 @@ export function defineKitConfig(options: KitConfigOptions): Config {
     singletons = [],
     apiHost,
     useProjectHostname,
+    blockSanityDomains,
   } = options
 
   const types = replaceSchemaTypes
@@ -67,6 +82,13 @@ export function defineKitConfig(options: KitConfigOptions): Config {
   // are path-based (`/v1/...`) instead of subdomain-based.
   const resolvedUseProjectHostname =
     useProjectHostname ?? (apiHost ? false : undefined)
+
+  // When self-hosting, install the fetch guard by default. It stops Studio
+  // telemetry, error reporting, and CDN fallback from reaching Sanity.io.
+  const shouldBlock = blockSanityDomains ?? (apiHost ? true : false)
+  if (shouldBlock) {
+    installSanityDomainGuard()
+  }
 
   return defineConfig({
     name,
