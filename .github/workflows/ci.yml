@@ -21,6 +21,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: content-lake-rs
+          shared-key: content-lake-rs
 
       - name: cargo fmt
         working-directory: content-lake-rs
@@ -37,6 +38,7 @@ jobs:
   integration:
     name: integration tests (Docker required)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -47,6 +49,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: content-lake-rs
+          shared-key: content-lake-rs
 
       - name: cargo test --test integration -- --ignored
         working-directory: content-lake-rs
@@ -60,8 +63,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:
@@ -69,4 +70,4 @@ jobs:
           cache: pnpm
 
       - name: install
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts

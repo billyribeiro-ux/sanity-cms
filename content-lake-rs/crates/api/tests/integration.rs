@@ -68,6 +68,12 @@ async fn boot(auth_disabled: bool, schema_file: Option<&str>) -> TestHarness {
     let addr = listener.local_addr().unwrap();
     let base_url = format!("http://{addr}");
 
+    // Point PUBLIC_BASE_URL at the ephemeral address so asset URLs resolve
+    // back to this test server instead of the default localhost:3030.
+    unsafe {
+        std::env::set_var("PUBLIC_BASE_URL", &base_url);
+    }
+
     // Build the app exactly the way main.rs does.
     let config = content_lake_api::config::AppConfig::from_env().expect("config from env");
     let pool = sqlx::postgres::PgPoolOptions::new()
