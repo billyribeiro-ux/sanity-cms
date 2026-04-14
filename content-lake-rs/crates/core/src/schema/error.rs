@@ -122,17 +122,18 @@ pub enum ValidationError {
     #[error("at path {path}: reference must be {{_ref, _type}} with string values")]
     InvalidReference { path: String },
 
-    #[error("at path {path}: image must be an object with `_type: \"image\"` and `asset` reference")]
+    #[error(
+        "at path {path}: image must be an object with `_type: \"image\"` and `asset` reference"
+    )]
     InvalidImage { path: String },
 
-    #[error("at path {path}: block must be an object with `_type: \"block\"` and a `children` array")]
+    #[error(
+        "at path {path}: block must be an object with `_type: \"block\"` and a `children` array"
+    )]
     InvalidBlock { path: String },
 
     #[error("at path {path}: array item does not match any of the allowed types {allowed:?}")]
-    ArrayItemMismatch {
-        path: String,
-        allowed: Vec<String>,
-    },
+    ArrayItemMismatch { path: String, allowed: Vec<String> },
 
     #[error("schema error: alias `{0}` refers to an unknown type")]
     UnknownAlias(String),

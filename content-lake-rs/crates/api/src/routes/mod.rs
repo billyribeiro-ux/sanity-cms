@@ -1,7 +1,9 @@
 pub mod assets;
 pub mod auth;
 pub mod doc;
+pub mod export;
 pub mod health;
+pub mod history;
 pub mod listen;
 pub mod mutate;
 pub mod presence;
@@ -24,5 +26,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(assets::routes())
         .merge(query::routes())
         .merge(presence::routes())
+        .merge(history::routes())
+        .merge(export::routes())
         .with_state(state)
 }

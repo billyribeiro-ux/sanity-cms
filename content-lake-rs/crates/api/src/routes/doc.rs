@@ -4,12 +4,12 @@
 //! are surfaced in the `omitted` array rather than causing a 404.
 
 use axum::{
-    Router,
     extract::{Path, State},
     response::Json,
     routing::get,
+    Router,
 };
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 
 use crate::{
     error::{ApiError, ApiResult},
@@ -75,11 +75,17 @@ pub fn document_to_wire(
     m.insert("_rev".into(), Value::String(d._rev));
     m.insert(
         "_createdAt".into(),
-        Value::String(d.created_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true)),
+        Value::String(
+            d.created_at
+                .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+        ),
     );
     m.insert(
         "_updatedAt".into(),
-        Value::String(d.updated_at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true)),
+        Value::String(
+            d.updated_at
+                .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+        ),
     );
     Ok(Value::Object(m))
 }

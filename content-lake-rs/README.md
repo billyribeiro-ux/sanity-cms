@@ -86,6 +86,14 @@ docker compose up
 | `POST` | `/v1/assets/images/{dataset}` | Phase 5 |
 | `WS` | `/v1/presence/{dataset}` | Phase 6 |
 
+## Multi-node event bus
+
+Mutations and presence are broadcast cross-node via Postgres
+`LISTEN/NOTIFY` on channels `content_lake_events` and
+`content_lake_presence`. Each node stamps events with a random `node_id`
+at startup so it doesn't process its own echo. No setup required — the
+backend wires it automatically on startup.
+
 ## Architecture
 
 See [RUST_API_PLAN.md](../sanity-main/RUST_API_PLAN.md) for the full implementation plan.

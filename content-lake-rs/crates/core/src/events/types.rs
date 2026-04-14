@@ -15,6 +15,30 @@ pub enum ContentLakeEvent {
     Reconnect,
 }
 
+impl ContentLakeEvent {
+    /// Return the cluster-local origin of this event, if it has one. Used by
+    /// the LISTEN bridge to drop echoes of events we already broadcast
+    /// in-process.
+    pub fn origin_node_id(&self) -> Option<Uuid> {
+        match self {
+            ContentLakeEvent::DocumentMutation(ev) => Some(ev.node_id),
+            ContentLakeEvent::Mutation(_)
+            | ContentLakeEvent::Welcome
+            | ContentLakeEvent::Reconnect => None,
+        }
+    }
+}
+
+impl PresenceEvent {
+    /// Return the cluster-local origin of this presence event, if it has one.
+    pub fn origin_node_id(&self) -> Option<Uuid> {
+        match self {
+            PresenceEvent::State(s) => Some(s.node_id),
+            PresenceEvent::Disappear { .. } => None,
+        }
+    }
+}
+
 /// A presence (multi-user cursor) update broadcast to all connected Studio
 /// sessions in the same dataset. One of `state` (session announced or moved)
 /// or `disappear` (session left).
@@ -43,6 +67,12 @@ pub struct PresenceState {
     /// Opaque JSON selection payload from the client (path + selection type).
     pub selection: Option<Value>,
     pub timestamp: DateTime<Utc>,
+    /// Cluster-local origin identifier. Each API node generates a random
+    /// `node_id` at startup; when forwarded over Postgres LISTEN/NOTIFY, the
+    /// receiving node uses this to drop its own echo (the event was already
+    /// broadcast locally when it was published).
+    #[serde(default)]
+    pub node_id: Uuid,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -72,4 +102,7 @@ pub struct DocumentMutationEvent {
     pub transition: String,
     pub mutations: Value,
     pub result: Option<Value>,
+    /// Cluster-local origin identifier. See `PresenceState::node_id`.
+    #[serde(default)]
+    pub node_id: Uuid,
 }

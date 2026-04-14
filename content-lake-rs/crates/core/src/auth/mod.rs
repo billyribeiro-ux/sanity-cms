@@ -26,7 +26,9 @@ fn offset_to_chrono(odt: OffsetDateTime) -> DateTime<Utc> {
         secs += 1;
         nanos -= 1_000_000_000;
     }
-    Utc.timestamp_opt(secs, nanos).single().unwrap_or_else(Utc::now)
+    Utc.timestamp_opt(secs, nanos)
+        .single()
+        .unwrap_or_else(Utc::now)
 }
 
 /// A row in the `users` table, minus the password hash.
@@ -94,11 +96,7 @@ pub async fn ensure_admin(pool: &PgPool, email: &str, password: &str) -> Result<
 /// Look up a user by email and verify their password. Returns `Ok(None)` for
 /// both "no such user" and "wrong password" so callers cannot leak whether an
 /// email exists.
-pub async fn verify_password(
-    pool: &PgPool,
-    email: &str,
-    password: &str,
-) -> Result<Option<User>> {
+pub async fn verify_password(pool: &PgPool, email: &str, password: &str) -> Result<Option<User>> {
     let row: Option<(Uuid, String, String, String, String, OffsetDateTime)> = sqlx::query_as(
         r#"
         SELECT id, email, name, password_hash, role, created_at
@@ -177,7 +175,10 @@ mod tests {
         // The internal dummy hash should parse so the timing-even path works.
         let r = verify_password_hash("anything", DUMMY_HASH);
         assert!(r.is_ok(), "dummy hash must be parseable");
-        assert!(!r.unwrap(), "dummy hash should not verify against 'anything'");
+        assert!(
+            !r.unwrap(),
+            "dummy hash should not verify against 'anything'"
+        );
     }
 
     #[test]

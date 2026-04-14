@@ -143,10 +143,7 @@ pub fn get_by_segments<'a>(root: &'a Value, segments: &[Segment]) -> Option<&'a 
     Some(cur)
 }
 
-pub fn get_by_segments_mut<'a>(
-    root: &'a mut Value,
-    segments: &[Segment],
-) -> Option<&'a mut Value> {
+pub fn get_by_segments_mut<'a>(root: &'a mut Value, segments: &[Segment]) -> Option<&'a mut Value> {
     let mut cur = root;
     for seg in segments {
         cur = match (seg, cur) {
@@ -220,9 +217,9 @@ fn traverse_mut_create<'a>(
                 cur = map.get_mut(name).unwrap();
             }
             Segment::Index(n) => {
-                let arr = cur.as_array_mut().ok_or_else(|| {
-                    PathError::NotAnArray(describe_segments(&segments[..i]))
-                })?;
+                let arr = cur
+                    .as_array_mut()
+                    .ok_or_else(|| PathError::NotAnArray(describe_segments(&segments[..i])))?;
                 let idx = resolve_index(*n, arr.len()).ok_or(PathError::IndexOutOfBounds {
                     index: *n,
                     len: arr.len(),
@@ -307,7 +304,10 @@ mod tests {
 
     #[test]
     fn parse_simple_field() {
-        assert_eq!(parse_path("foo").unwrap(), vec![Segment::Field("foo".into())]);
+        assert_eq!(
+            parse_path("foo").unwrap(),
+            vec![Segment::Field("foo".into())]
+        );
     }
 
     #[test]

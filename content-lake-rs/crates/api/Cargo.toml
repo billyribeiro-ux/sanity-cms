@@ -32,7 +32,20 @@ sha1 = "0.10"
 futures = "0.3"
 tokio-stream = { version = "0.1", features = ["sync"] }
 tokio-util = { version = "0.7", features = ["io"] }
+# Lightweight dimension probe for image uploads — only pulls common web
+# formats so we don't blow up compile times.
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "stream", "multipart"] }
+testcontainers-modules = { version = "0.11", features = ["postgres"] }
+tokio-tungstenite = "0.24"
+futures = "0.3"
+futures-util = "0.3"
+serde_json = { workspace = true }
+uuid = { workspace = true }
+tracing-subscriber = { workspace = true }
+tempfile = "3"
+urlencoding = "2"
+sqlx = { workspace = true }

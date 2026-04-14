@@ -1,0 +1,72 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust:
+    name: rust (content-lake-rs)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache cargo build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: content-lake-rs
+
+      - name: cargo fmt
+        working-directory: content-lake-rs
+        run: cargo fmt --all -- --check
+
+      - name: cargo clippy
+        working-directory: content-lake-rs
+        run: cargo clippy --workspace --all-targets -- -D warnings -A clippy::result_large_err
+
+      - name: cargo test (unit)
+        working-directory: content-lake-rs
+        run: cargo test --workspace --lib --bins
+
+  integration:
+    name: integration tests (Docker required)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: content-lake-rs
+
+      - name: cargo test --test integration -- --ignored
+        working-directory: content-lake-rs
+        run: cargo test --test integration -- --ignored --test-threads=1
+
+  node:
+    name: node workspace
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: install
+        run: pnpm install --frozen-lockfile

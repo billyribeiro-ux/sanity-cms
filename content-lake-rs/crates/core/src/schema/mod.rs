@@ -148,10 +148,7 @@ impl SchemaRegistry {
         if self.types.is_empty() {
             return Ok(());
         }
-        let doc_type = doc
-            .get("_type")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let doc_type = doc.get("_type").and_then(|v| v.as_str()).unwrap_or("");
         let Some(def) = self.types.get(doc_type) else {
             return Ok(());
         };
@@ -171,9 +168,11 @@ fn parse_type_top(type_name: &str, obj: &Map<String, Value>) -> Result<TypeDef, 
         .ok_or_else(|| SchemaError::ObjectMissingFields {
             path: type_name.to_string(),
         })?;
-    let fields_arr = fields_val.as_array().ok_or_else(|| SchemaError::FieldsNotArray {
-        path: type_name.to_string(),
-    })?;
+    let fields_arr = fields_val
+        .as_array()
+        .ok_or_else(|| SchemaError::FieldsNotArray {
+            path: type_name.to_string(),
+        })?;
     let fields = parse_fields(type_name, fields_arr)?;
     Ok(TypeDef::Object(ObjectType { fields }))
 }
@@ -181,10 +180,12 @@ fn parse_type_top(type_name: &str, obj: &Map<String, Value>) -> Result<TypeDef, 
 fn parse_fields(path: &str, items: &[Value]) -> Result<Vec<FieldDef>, SchemaError> {
     let mut out = Vec::with_capacity(items.len());
     for (i, item) in items.iter().enumerate() {
-        let m = item.as_object().ok_or_else(|| SchemaError::FieldNotObject {
-            type_name: path.to_string(),
-            index: i,
-        })?;
+        let m = item
+            .as_object()
+            .ok_or_else(|| SchemaError::FieldNotObject {
+                type_name: path.to_string(),
+                index: i,
+            })?;
         let name = m
             .get("name")
             .and_then(|v| v.as_str())
@@ -204,11 +205,13 @@ fn parse_fields(path: &str, items: &[Value]) -> Result<Vec<FieldDef>, SchemaErro
         let pattern = m
             .get("pattern")
             .and_then(|v| v.as_str())
-            .map(|p| Regex::new(p).map_err(|source| SchemaError::InvalidRegex {
-                path: field_path.clone(),
-                pattern: p.to_string(),
-                source,
-            }))
+            .map(|p| {
+                Regex::new(p).map_err(|source| SchemaError::InvalidRegex {
+                    path: field_path.clone(),
+                    pattern: p.to_string(),
+                    source,
+                })
+            })
             .transpose()?;
 
         out.push(FieldDef {
@@ -225,12 +228,12 @@ fn parse_fields(path: &str, items: &[Value]) -> Result<Vec<FieldDef>, SchemaErro
 }
 
 fn parse_inline_type(path: &str, m: &Map<String, Value>) -> Result<TypeDef, SchemaError> {
-    let ty = m
-        .get("type")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| SchemaError::FieldMissingType {
-            path: path.to_string(),
-        })?;
+    let ty =
+        m.get("type")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| SchemaError::FieldMissingType {
+                path: path.to_string(),
+            })?;
 
     match ty {
         "string" => {
@@ -249,12 +252,11 @@ fn parse_inline_type(path: &str, m: &Map<String, Value>) -> Result<TypeDef, Sche
         "block" => Ok(TypeDef::Block),
         "image" => Ok(TypeDef::Image),
         "object" => {
-            let arr = m
-                .get("fields")
-                .and_then(|v| v.as_array())
-                .ok_or_else(|| SchemaError::ObjectMissingFields {
+            let arr = m.get("fields").and_then(|v| v.as_array()).ok_or_else(|| {
+                SchemaError::ObjectMissingFields {
                     path: path.to_string(),
-                })?;
+                }
+            })?;
             let fields = parse_fields(path, arr)?;
             Ok(TypeDef::Object(ObjectType { fields }))
         }
@@ -631,7 +633,9 @@ mod tests {
     #[test]
     fn empty_registry_accepts_anything() {
         let r = SchemaRegistry::empty();
-        assert!(r.validate_document(&json!({"_type":"anything","foo":1})).is_ok());
+        assert!(r
+            .validate_document(&json!({"_type":"anything","foo":1}))
+            .is_ok());
     }
 
     #[test]
@@ -674,9 +678,7 @@ mod tests {
         let r = reg(json!({"types": {"page": {"fields": [
             {"name": "title", "type": "string", "required": true}
         ]}}}));
-        let err = r
-            .validate_document(&json!({"_type": "page"}))
-            .unwrap_err();
+        let err = r.validate_document(&json!({"_type": "page"})).unwrap_err();
         assert!(matches!(err, ValidationError::MissingRequired { .. }));
     }
 
@@ -696,8 +698,12 @@ mod tests {
         let r = reg(json!({"types": {"page": {"fields": [
             {"name": "slug", "type": "string", "pattern": "^[a-z-]+$"}
         ]}}}));
-        assert!(r.validate_document(&json!({"_type":"page","slug":"hello"})).is_ok());
-        let err = r.validate_document(&json!({"_type":"page","slug":"Hello World"})).unwrap_err();
+        assert!(r
+            .validate_document(&json!({"_type":"page","slug":"hello"}))
+            .is_ok());
+        let err = r
+            .validate_document(&json!({"_type":"page","slug":"Hello World"}))
+            .unwrap_err();
         assert!(matches!(err, ValidationError::PatternMismatch { .. }));
     }
 
@@ -706,13 +712,17 @@ mod tests {
         let r = reg(json!({"types": {"page": {"fields": [
             {"name": "title", "type": "string", "min": 3, "max": 5}
         ]}}}));
-        assert!(r.validate_document(&json!({"_type":"page","title":"hey"})).is_ok());
+        assert!(r
+            .validate_document(&json!({"_type":"page","title":"hey"}))
+            .is_ok());
         assert!(matches!(
-            r.validate_document(&json!({"_type":"page","title":"hi"})).unwrap_err(),
+            r.validate_document(&json!({"_type":"page","title":"hi"}))
+                .unwrap_err(),
             ValidationError::StringTooShort { .. }
         ));
         assert!(matches!(
-            r.validate_document(&json!({"_type":"page","title":"howdy!"})).unwrap_err(),
+            r.validate_document(&json!({"_type":"page","title":"howdy!"}))
+                .unwrap_err(),
             ValidationError::StringTooLong { .. }
         ));
     }
@@ -724,7 +734,8 @@ mod tests {
         ]}}}));
         assert!(r.validate_document(&json!({"_type":"page","n":5})).is_ok());
         assert!(matches!(
-            r.validate_document(&json!({"_type":"page","n":-1})).unwrap_err(),
+            r.validate_document(&json!({"_type":"page","n":-1}))
+                .unwrap_err(),
             ValidationError::NumberTooSmall { .. }
         ));
     }
@@ -734,8 +745,12 @@ mod tests {
         let r = reg(json!({"types": {"page": {"fields": [
             {"name": "body", "type": "array", "of": ["string", "number"]}
         ]}}}));
-        assert!(r.validate_document(&json!({"_type":"page","body":["a",1]})).is_ok());
-        let err = r.validate_document(&json!({"_type":"page","body":[true]})).unwrap_err();
+        assert!(r
+            .validate_document(&json!({"_type":"page","body":["a",1]}))
+            .is_ok());
+        let err = r
+            .validate_document(&json!({"_type":"page","body":[true]}))
+            .unwrap_err();
         assert!(matches!(err, ValidationError::ArrayItemMismatch { .. }));
     }
 
@@ -746,7 +761,9 @@ mod tests {
                 {"name": "current", "type": "string", "required": true}
             ]}
         ]}}}));
-        let err = r.validate_document(&json!({"_type":"page","slug":{}})).unwrap_err();
+        let err = r
+            .validate_document(&json!({"_type":"page","slug":{}}))
+            .unwrap_err();
         assert!(matches!(err, ValidationError::MissingRequired { .. }));
     }
 
@@ -755,8 +772,12 @@ mod tests {
         let r = reg(json!({"types": {"page": {"fields": [
             {"name": "author", "type": "reference"}
         ]}}}));
-        assert!(r.validate_document(&json!({"_type":"page","author":{"_ref":"a","_type":"user"}})).is_ok());
-        assert!(r.validate_document(&json!({"_type":"page","author":{"no":"ref"}})).is_err());
+        assert!(r
+            .validate_document(&json!({"_type":"page","author":{"_ref":"a","_type":"user"}}))
+            .is_ok());
+        assert!(r
+            .validate_document(&json!({"_type":"page","author":{"no":"ref"}}))
+            .is_err());
     }
 
     #[test]
@@ -764,9 +785,12 @@ mod tests {
         let r = reg(json!({"types": {"page": {"fields": [
             {"name": "at", "type": "datetime"}
         ]}}}));
-        assert!(r.validate_document(&json!({"_type":"page","at":"2026-04-14T00:00:00Z"})).is_ok());
+        assert!(r
+            .validate_document(&json!({"_type":"page","at":"2026-04-14T00:00:00Z"}))
+            .is_ok());
         assert!(matches!(
-            r.validate_document(&json!({"_type":"page","at":"not a date"})).unwrap_err(),
+            r.validate_document(&json!({"_type":"page","at":"not a date"}))
+                .unwrap_err(),
             ValidationError::InvalidDatetime { .. }
         ));
     }
@@ -781,9 +805,12 @@ mod tests {
             {"name": "_type", "type": "string", "value": "page"},
             {"name": "status", "type": "string", "value": "published"}
         ]}}}));
-        assert!(r.validate_document(&json!({"_type":"page","status":"published"})).is_ok());
+        assert!(r
+            .validate_document(&json!({"_type":"page","status":"published"}))
+            .is_ok());
         assert!(matches!(
-            r.validate_document(&json!({"_type":"page","status":"draft"})).unwrap_err(),
+            r.validate_document(&json!({"_type":"page","status":"draft"}))
+                .unwrap_err(),
             ValidationError::ValueMismatch { .. }
         ));
     }
@@ -794,7 +821,9 @@ mod tests {
             {"name": "title", "type": "string", "required": true}
         ]}}}));
         // "author" isn't registered so we don't validate it.
-        assert!(r.validate_document(&json!({"_type":"author","name":"Jane"})).is_ok());
+        assert!(r
+            .validate_document(&json!({"_type":"author","name":"Jane"}))
+            .is_ok());
     }
 
     #[test]
@@ -803,7 +832,9 @@ mod tests {
             {"name": "hero", "type": "image"}
         ]}}}));
         assert!(r
-            .validate_document(&json!({"_type":"page","hero":{"_type":"image","asset":{"_ref":"x"}}}))
+            .validate_document(
+                &json!({"_type":"page","hero":{"_type":"image","asset":{"_ref":"x"}}})
+            )
             .is_ok());
         assert!(r
             .validate_document(&json!({"_type":"page","hero":{"_type":"image"}}))

@@ -88,6 +88,8 @@ Content Lake contract for the implemented surface.
 | `POST /v1/assets/files/{dataset}` | ✅ sanity.fileAsset, multipart or raw |
 | `GET /assets/files/{filename}` | ✅ |
 | `GET /v1/presence/{dataset}` | ✅ WebSocket — welcome, initial snapshot, state + disappear broadcasts |
+| `GET /v1/history/{dataset}/{docId}` | ✅ Per-document transaction log, newest first |
+| `GET /v1/data/export/{dataset}` | ✅ NDJSON dump of every document in the dataset (optional `?types=a,b`) |
 
 ### Studio (`packages/`, `templates/starter/`)
 - ✅ 7 reusable schema types (page, siteSettings, navigation, seo, imageWithAlt, link, cta, richText)
@@ -99,6 +101,32 @@ Content Lake contract for the implemented surface.
 
 - **GROQ gaps**: arbitrary subqueries in projections, slice-expressions in filters, `order()` on nested arrays, `pt::text()` and other string helpers
 _None of the known gaps leak to Sanity.io — everything runs locally or fails with a 4xx._
+
+## Continuous integration
+
+Every push runs under `.github/workflows/ci.yml`:
+
+- `rust` job: `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test --workspace --lib --bins`
+- `integration` job: spins up a Postgres container and runs the Docker-backed end-to-end HTTP tests (`cargo test --test integration -- --ignored`)
+- `node` job: installs the pnpm workspace (tolerated to fail — `continue-on-error` — while catalog wiring stabilizes)
+
+### Run integration tests locally
+
+```bash
+cd content-lake-rs
+cargo test --test integration -- --ignored --test-threads=1
+```
+
+Requires a running Docker daemon; each test boots its own ephemeral Postgres.
+
+### Multi-node event bus
+
+Mutations and presence are broadcast cross-node via Postgres `LISTEN/NOTIFY`
+on channels `content_lake_events` and `content_lake_presence`. Each node
+stamps outgoing events with a random `node_id` at startup so it doesn't
+process its own echo. Oversized payloads (asset uploads carrying full docs)
+fall back to a slim form; remote nodes re-fetch the document by id. No
+setup required — the backend wires it automatically.
 
 ## Server-side schema validation
 

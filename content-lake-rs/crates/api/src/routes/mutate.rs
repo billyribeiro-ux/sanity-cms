@@ -23,14 +23,14 @@
 //! A single failure rolls the whole batch back.
 
 use axum::{
-    Router,
     extract::{Path, State},
     response::Json,
     routing::post,
+    Router,
 };
 use chrono::Utc;
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use sqlx::Acquire;
 use uuid::Uuid;
 
@@ -88,6 +88,11 @@ async fn mutate(
     // Events to broadcast after the transaction commits. We only publish on
     // success so subscribers don't see rolled-back mutations.
     let mut pending_events: Vec<DocumentMutationEvent> = Vec::with_capacity(body.mutations.len());
+    // (document_id, previous_rev, result_rev) tuples for the transaction log.
+    let mut touched: Vec<(String, Option<String>, Option<String>)> =
+        Vec::with_capacity(body.mutations.len());
+    // Raw mutation JSON captured for the transaction log.
+    let mut raw_mutations: Vec<Value> = Vec::with_capacity(body.mutations.len());
 
     for mutation in &body.mutations {
         let target_id = extract_target_id(mutation);
@@ -98,13 +103,14 @@ async fn mutate(
         } else {
             None
         };
+        let previous_rev = current.as_ref().map(|d| d._rev.clone());
 
         let new_rev = new_rev();
         let outcome = engine::apply_mutation(current.as_ref(), mutation, &new_rev, Utc::now())
             .map_err(map_engine_err)?;
 
-        let mutation_value = serde_json::to_value(mutation)
-            .unwrap_or(Value::Null);
+        let mutation_value = serde_json::to_value(mutation).unwrap_or(Value::Null);
+        raw_mutations.push(mutation_value.clone());
 
         let (id, op, event) = match outcome {
             MutationResult::Created(doc) => {
@@ -130,7 +136,9 @@ async fn mutate(
                     transition: "appear".to_string(),
                     mutations: json!([mutation_value.clone()]),
                     result,
+                    node_id: state.node_id(),
                 };
+                touched.push((doc_id.clone(), None, Some(new_rev.clone())));
                 (doc_id, "create", Some(ev))
             }
             MutationResult::Updated(doc) => {
@@ -154,7 +162,9 @@ async fn mutate(
                     transition: "update".to_string(),
                     mutations: json!([mutation_value.clone()]),
                     result,
+                    node_id: state.node_id(),
                 };
+                touched.push((doc_id.clone(), previous_rev.clone(), Some(new_rev.clone())));
                 (doc_id, "update", Some(ev))
             }
             MutationResult::Deleted(id) => {
@@ -168,7 +178,9 @@ async fn mutate(
                     transition: "disappear".to_string(),
                     mutations: json!([mutation_value.clone()]),
                     result: None,
+                    node_id: state.node_id(),
                 };
+                touched.push((id.clone(), previous_rev.clone(), None));
                 (id, "delete", Some(ev))
             }
             MutationResult::NoOp => {
@@ -184,13 +196,35 @@ async fn mutate(
         results.push(json!({"id": id, "operation": op}));
     }
 
+    // Append the transaction row + per-document rev history before commit so
+    // the /v1/history endpoint has something to return.
+    if !touched.is_empty() {
+        repo::append_transaction(
+            &mut tx,
+            dataset_id,
+            &tx_id,
+            None, // TODO: populate author from CurrentUser extension
+            &Value::Array(raw_mutations),
+            &touched,
+        )
+        .await
+        .map_err(map_repo_err)?;
+    }
+
     tx.commit().await.map_err(ApiError::Database)?;
 
-    // Broadcast after commit. Send errors (no active subscribers) are
-    // non-fatal.
+    // Broadcast after commit. Use the durable path so other cluster nodes
+    // see the event via Postgres LISTEN/NOTIFY as well as our own SSE
+    // subscribers. NOTIFY errors are logged but never fail the request —
+    // the mutation has already committed.
     let bus = state.event_bus();
     for ev in pending_events {
-        let _ = bus.publish(ContentLakeEvent::DocumentMutation(ev));
+        if let Err(e) = bus
+            .publish_durable(state.pool(), ContentLakeEvent::DocumentMutation(ev))
+            .await
+        {
+            tracing::warn!(error = %e, "durable event publish failed (mutation already committed)");
+        }
     }
 
     Ok(Json(json!({
@@ -204,13 +238,21 @@ async fn mutate(
 /// a pre-existing id (e.g. `create` without `_id`).
 fn extract_target_id(m: &Mutation) -> Option<String> {
     match m {
-        Mutation::Create(c) => c.document.get("_id").and_then(|v| v.as_str()).map(String::from),
-        Mutation::CreateOrReplace(c) => {
-            c.document.get("_id").and_then(|v| v.as_str()).map(String::from)
-        }
-        Mutation::CreateIfNotExists(c) => {
-            c.document.get("_id").and_then(|v| v.as_str()).map(String::from)
-        }
+        Mutation::Create(c) => c
+            .document
+            .get("_id")
+            .and_then(|v| v.as_str())
+            .map(String::from),
+        Mutation::CreateOrReplace(c) => c
+            .document
+            .get("_id")
+            .and_then(|v| v.as_str())
+            .map(String::from),
+        Mutation::CreateIfNotExists(c) => c
+            .document
+            .get("_id")
+            .and_then(|v| v.as_str())
+            .map(String::from),
         Mutation::Delete(d) => match &d.target {
             DeleteTarget::ById { id } => Some(id.clone()),
             DeleteTarget::ByQuery { .. } => None,

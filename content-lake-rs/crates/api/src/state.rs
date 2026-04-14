@@ -3,6 +3,7 @@ use std::sync::Arc;
 use content_lake_core::events::bus::{EventBus, PresenceBus};
 use content_lake_core::schema::SchemaRegistry;
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::config::AppConfig;
 
@@ -20,6 +21,7 @@ struct InnerState {
     pub event_bus: EventBus,
     pub presence_bus: PresenceBus,
     pub schema_registry: Arc<SchemaRegistry>,
+    pub node_id: Uuid,
 }
 
 impl AppState {
@@ -27,9 +29,10 @@ impl AppState {
         pool: PgPool,
         config: AppConfig,
         event_bus: EventBus,
+        presence_bus: PresenceBus,
         schema_registry: Arc<SchemaRegistry>,
+        node_id: Uuid,
     ) -> Self {
-        let presence_bus = PresenceBus::new(1024);
         Self {
             inner: Arc::new(InnerState {
                 pool,
@@ -37,6 +40,7 @@ impl AppState {
                 event_bus,
                 presence_bus,
                 schema_registry,
+                node_id,
             }),
         }
     }
@@ -59,5 +63,12 @@ impl AppState {
 
     pub fn schema_registry(&self) -> &SchemaRegistry {
         &self.inner.schema_registry
+    }
+
+    /// Cluster-local node identifier, generated once at startup and stamped
+    /// into every outgoing event so remote nodes can dedupe echoes received
+    /// over Postgres `LISTEN/NOTIFY`.
+    pub fn node_id(&self) -> Uuid {
+        self.inner.node_id
     }
 }

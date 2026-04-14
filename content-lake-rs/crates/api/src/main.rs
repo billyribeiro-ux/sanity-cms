@@ -1,12 +1,8 @@
-mod config;
-mod error;
-mod middleware;
-mod routes;
-mod state;
-
-use content_lake_core::events::bus::EventBus;
+use content_lake_api::{config, middleware, routes, state};
+use content_lake_core::events::bus::{EventBus, PresenceBus};
 use sqlx::postgres::PgPoolOptions;
 use tracing_subscriber::EnvFilter;
+use uuid::Uuid;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -70,21 +66,29 @@ async fn main() -> anyhow::Result<()> {
             .map_err(|e| anyhow::anyhow!("admin bootstrap failed: {e}"))?;
     tracing::info!(admin_id = %admin_id, email = %config.admin_email, "Admin user ready");
     if config.admin_password == "admin" {
-        tracing::warn!(
-            "Using default admin password \u{2014} set ADMIN_PASSWORD in production"
-        );
+        tracing::warn!("Using default admin password \u{2014} set ADMIN_PASSWORD in production");
     }
     if config.auth_disabled {
         tracing::warn!("AUTH_DISABLED=1 \u{2014} skipping JWT verification on all requests");
     }
 
-    // Create event bus
-    let event_bus = EventBus::new(config.event_bus_capacity);
+    // Generate a cluster-local node id. Stamped into every outgoing event so
+    // other nodes (receiving the event over Postgres LISTEN/NOTIFY) can
+    // distinguish it from their own echoes and dedupe.
+    let node_id = Uuid::now_v7();
+    tracing::info!(node_id = %node_id, "cluster node id");
+
+    // Create event + presence buses, both bridged to Postgres LISTEN/NOTIFY.
+    let event_bus = EventBus::with_postgres(config.event_bus_capacity, &pool, node_id)
+        .await
+        .map_err(|e| anyhow::anyhow!("event bus wiring failed: {e}"))?;
+    let presence_bus = PresenceBus::with_postgres(1024, &pool, node_id)
+        .await
+        .map_err(|e| anyhow::anyhow!("presence bus wiring failed: {e}"))?;
 
     // Load the optional document schema registry (SCHEMA_FILE env).
-    let schema_registry = std::sync::Arc::new(
-        content_lake_core::schema::SchemaRegistry::from_env_or_empty(),
-    );
+    let schema_registry =
+        std::sync::Arc::new(content_lake_core::schema::SchemaRegistry::from_env_or_empty());
     if schema_registry.is_empty() {
         tracing::info!("Schema validation disabled (no SCHEMA_FILE or empty registry)");
     } else {
@@ -92,7 +96,14 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // Build application state
-    let state = state::AppState::new(pool, config.clone(), event_bus, schema_registry);
+    let state = state::AppState::new(
+        pool,
+        config.clone(),
+        event_bus,
+        presence_bus,
+        schema_registry,
+        node_id,
+    );
 
     // Build router with middleware
     let app = routes::build_router(state.clone())

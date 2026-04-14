@@ -284,9 +284,7 @@ fn apply_diff_match_patch(json: &mut Value, ops: &Value) -> Result<(), MutationE
         })?;
 
         let (new_chars, results) = dmp.patch_apply(&patches, source).map_err(|e| {
-            MutationError::InvalidOperation(format!(
-                "diff-match-patch failed at `{path}`: {e:?}"
-            ))
+            MutationError::InvalidOperation(format!("diff-match-patch failed at `{path}`: {e:?}"))
         })?;
 
         if results.iter().any(|ok| !ok) {
@@ -308,9 +306,9 @@ fn apply_inc_dec(json: &mut Value, op: &Value, sign: f64) -> Result<(), Mutation
         .as_object()
         .ok_or_else(|| MutationError::InvalidOperation("`inc`/`dec` must be an object".into()))?;
     for (path, delta) in obj {
-        let delta_num = delta
-            .as_f64()
-            .ok_or_else(|| MutationError::InvalidOperation(format!("`{path}` delta not numeric")))?;
+        let delta_num = delta.as_f64().ok_or_else(|| {
+            MutationError::InvalidOperation(format!("`{path}` delta not numeric"))
+        })?;
         let current = jp::get_value(json, path).cloned().unwrap_or(Value::Null);
         let base = match &current {
             Value::Null => 0.0,
@@ -348,13 +346,12 @@ fn apply_insert(json: &mut Value, ins: &InsertOperation) -> Result<(), MutationE
     let (parent_segments, last_idx) = jp::split_array_path(path)
         .map_err(|e| MutationError::InvalidPath(format!("{path}: {e}")))?;
 
-    let parent = jp::get_by_segments_mut(json, &parent_segments).ok_or_else(|| {
-        MutationError::InvalidPath(format!("parent of {path} does not exist"))
-    })?;
+    let parent = jp::get_by_segments_mut(json, &parent_segments)
+        .ok_or_else(|| MutationError::InvalidPath(format!("parent of {path} does not exist")))?;
 
-    let arr = parent.as_array_mut().ok_or_else(|| {
-        MutationError::InvalidPath(format!("target of {path} is not an array"))
-    })?;
+    let arr = parent
+        .as_array_mut()
+        .ok_or_else(|| MutationError::InvalidPath(format!("target of {path} is not an array")))?;
 
     let resolved = resolve_index_for_insert(last_idx, arr.len(), mode)?;
 
@@ -440,14 +437,22 @@ fn build_document_from_payload(
     // _id: use payload or generate.
     let id = match content.remove("_id") {
         Some(Value::String(s)) => s,
-        Some(_) => return Err(MutationError::InvalidOperation("_id must be a string".into())),
+        Some(_) => {
+            return Err(MutationError::InvalidOperation(
+                "_id must be a string".into(),
+            ))
+        }
         None => uuid::Uuid::now_v7().as_simple().to_string(),
     };
     validate_document_id(&id)?;
 
     let doc_type = match content.remove("_type") {
         Some(Value::String(s)) => s,
-        Some(_) => return Err(MutationError::InvalidOperation("_type must be a string".into())),
+        Some(_) => {
+            return Err(MutationError::InvalidOperation(
+                "_type must be a string".into(),
+            ))
+        }
         None => {
             return Err(MutationError::InvalidOperation(
                 "_type is required on create/replace".into(),
@@ -506,14 +511,18 @@ fn document_from_json(v: &Value) -> Result<SanityDocument, MutationError> {
 fn take_string(m: &mut Map<String, Value>, key: &str) -> Result<String, MutationError> {
     match m.remove(key) {
         Some(Value::String(s)) => Ok(s),
-        Some(_) => Err(MutationError::InvalidOperation(format!("{key} must be a string"))),
+        Some(_) => Err(MutationError::InvalidOperation(format!(
+            "{key} must be a string"
+        ))),
         None => Err(MutationError::InvalidOperation(format!("{key} missing"))),
     }
 }
 
 fn validate_document_id(id: &str) -> Result<(), MutationError> {
     if id.is_empty() {
-        return Err(MutationError::InvalidOperation("_id cannot be empty".into()));
+        return Err(MutationError::InvalidOperation(
+            "_id cannot be empty".into(),
+        ));
     }
     // Allow id, drafts.id, versions.release.id
     for ch in id.chars() {
@@ -531,7 +540,9 @@ fn iso(t: DateTime<Utc>) -> String {
 }
 
 fn parse_iso(s: &str) -> Option<DateTime<Utc>> {
-    DateTime::parse_from_rfc3339(s).ok().map(|d| d.with_timezone(&Utc))
+    DateTime::parse_from_rfc3339(s)
+        .ok()
+        .map(|d| d.with_timezone(&Utc))
 }
 
 fn deep_merge(a: Value, b: Value) -> Value {
@@ -642,9 +653,18 @@ mod tests {
         let m = parse_mut(r#"{"patch": {"id": "a", "set": {"meta.title": "Hi"}}}"#);
         let existing = doc("a", json!({"meta": {"author": "x"}}));
         let r = apply_mutation(Some(&existing), &m, "rev2", Utc::now()).unwrap();
-        let d = match r { MutationResult::Updated(d) => d, _ => panic!() };
-        assert_eq!(d.content.get("meta").unwrap().get("title"), Some(&json!("Hi")));
-        assert_eq!(d.content.get("meta").unwrap().get("author"), Some(&json!("x")));
+        let d = match r {
+            MutationResult::Updated(d) => d,
+            _ => panic!(),
+        };
+        assert_eq!(
+            d.content.get("meta").unwrap().get("title"),
+            Some(&json!("Hi"))
+        );
+        assert_eq!(
+            d.content.get("meta").unwrap().get("author"),
+            Some(&json!("x"))
+        );
     }
 
     #[test]
@@ -652,7 +672,10 @@ mod tests {
         let m = parse_mut(r#"{"patch": {"id": "a", "unset": ["title"]}}"#);
         let existing = doc("a", json!({"title": "X", "other": 1}));
         let r = apply_mutation(Some(&existing), &m, "rev2", Utc::now()).unwrap();
-        let d = match r { MutationResult::Updated(d) => d, _ => panic!() };
+        let d = match r {
+            MutationResult::Updated(d) => d,
+            _ => panic!(),
+        };
         assert!(d.content.get("title").is_none());
     }
 
@@ -661,7 +684,10 @@ mod tests {
         let m = parse_mut(r#"{"patch": {"id": "a", "inc": {"views": 5}}}"#);
         let existing = doc("a", json!({"views": 10}));
         let r = apply_mutation(Some(&existing), &m, "rev2", Utc::now()).unwrap();
-        let d = match r { MutationResult::Updated(d) => d, _ => panic!() };
+        let d = match r {
+            MutationResult::Updated(d) => d,
+            _ => panic!(),
+        };
         assert_eq!(d.content.get("views"), Some(&json!(15.0)));
     }
 
@@ -678,15 +704,16 @@ mod tests {
         let m = parse_mut(r#"{"patch": {"id": "a", "setIfMissing": {"title": "New"}}}"#);
         let existing = doc("a", json!({"title": "Old"}));
         let r = apply_mutation(Some(&existing), &m, "rev2", Utc::now()).unwrap();
-        let d = match r { MutationResult::Updated(d) => d, _ => panic!() };
+        let d = match r {
+            MutationResult::Updated(d) => d,
+            _ => panic!(),
+        };
         assert_eq!(d.content.get("title"), Some(&json!("Old")));
     }
 
     #[test]
     fn patch_if_revision_mismatch() {
-        let m = parse_mut(
-            r#"{"patch": {"id": "a", "ifRevisionID": "OLD", "set": {"x": 1}}}"#,
-        );
+        let m = parse_mut(r#"{"patch": {"id": "a", "ifRevisionID": "OLD", "set": {"x": 1}}}"#);
         let existing = doc("a", json!({}));
         let err = apply_mutation(Some(&existing), &m, "rev2", Utc::now()).unwrap_err();
         assert!(matches!(err, MutationError::RevisionMismatch { .. }));
@@ -694,12 +721,14 @@ mod tests {
 
     #[test]
     fn patch_insert_after() {
-        let m = parse_mut(
-            r#"{"patch": {"id": "a", "insert": {"after": "items[0]", "items": [99]}}}"#,
-        );
+        let m =
+            parse_mut(r#"{"patch": {"id": "a", "insert": {"after": "items[0]", "items": [99]}}}"#);
         let existing = doc("a", json!({"items": [1, 2, 3]}));
         let r = apply_mutation(Some(&existing), &m, "rev2", Utc::now()).unwrap();
-        let d = match r { MutationResult::Updated(d) => d, _ => panic!() };
+        let d = match r {
+            MutationResult::Updated(d) => d,
+            _ => panic!(),
+        };
         assert_eq!(d.content.get("items"), Some(&json!([1, 99, 2, 3])));
     }
 
@@ -710,7 +739,10 @@ mod tests {
         );
         let existing = doc("a", json!({"items": [1, 2, 3]}));
         let r = apply_mutation(Some(&existing), &m, "rev2", Utc::now()).unwrap();
-        let d = match r { MutationResult::Updated(d) => d, _ => panic!() };
+        let d = match r {
+            MutationResult::Updated(d) => d,
+            _ => panic!(),
+        };
         assert_eq!(d.content.get("items"), Some(&json!([1, 99, 100, 3])));
     }
 
@@ -739,7 +771,10 @@ mod tests {
         let m: Mutation = serde_json::from_value(mutation).unwrap();
         let existing = doc("a", json!({"body": "hello"}));
         let r = apply_mutation(Some(&existing), &m, "rev2", Utc::now()).unwrap();
-        let d = match r { MutationResult::Updated(d) => d, _ => panic!() };
+        let d = match r {
+            MutationResult::Updated(d) => d,
+            _ => panic!(),
+        };
         assert_eq!(d.content.get("body"), Some(&json!("hello world")));
     }
 
@@ -765,10 +800,19 @@ mod tests {
             }),
         );
         let r = apply_mutation(Some(&existing), &m, "rev2", Utc::now()).unwrap();
-        let d = match r { MutationResult::Updated(d) => d, _ => panic!() };
+        let d = match r {
+            MutationResult::Updated(d) => d,
+            _ => panic!(),
+        };
         let body = d.content.get("body").unwrap();
         assert_eq!(
-            body.get(0).unwrap().get("children").unwrap().get(1).unwrap().get("text"),
+            body.get(0)
+                .unwrap()
+                .get("children")
+                .unwrap()
+                .get(1)
+                .unwrap()
+                .get("text"),
             Some(&json!("new text here"))
         );
     }
