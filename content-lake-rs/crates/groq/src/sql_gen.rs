@@ -48,6 +48,9 @@ pub struct QueryPlan {
     pub order_by: Vec<OrderKey>,
     /// When true, return a single object (not an array) — used for `*[...][0]`.
     pub single: bool,
+    /// When true, the executor should return `{"ms":…,"query":…,"result": N}`
+    /// where N is the row count — used for `count(*[...])`.
+    pub count_only: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -62,6 +65,13 @@ pub enum ProjectionSource {
     Ident(String),
     /// `"alias": path.to.field` — copy a dotted path under an alias.
     Path(Vec<String>),
+    /// `"alias": ref->` — follow the reference at `path`, return the target doc
+    /// (or subfield if `sub_path` is non-empty: `ref->name` gives the name).
+    Deref {
+        path: Vec<String>,
+        /// Optional projection of the target doc. None = return the whole target doc.
+        sub_projection: Option<Box<ProjectionSpec>>,
+    },
     /// Any expression we couldn't specialize — materialize as null.
     Unsupported,
 }
@@ -78,9 +88,18 @@ pub struct OrderKey {
 /// The caller must prepend the `dataset_id` binding as `$1` when executing
 /// the resulting SQL.
 pub fn plan(ast: &Expr, params: &Map<String, Value>) -> Result<QueryPlan, PlanError> {
+    // Unwrap `count(x)` at the top level: plan `x` but mark the plan so the
+    // executor returns a single number.
+    let (root, count_only) = match ast {
+        Expr::FuncCall(name, args) if name == "count" && args.len() == 1 => {
+            (args[0].clone(), true)
+        }
+        other => (other.clone(), false),
+    };
+
     // Normalize: most meaningful queries are pipelines. Single-stage things
     // like bare `*` are accepted too.
-    let stages = match ast {
+    let stages = match &root {
         Expr::Pipeline(stages) => stages.clone(),
         other => vec![other.clone()],
     };
@@ -183,6 +202,7 @@ pub fn plan(ast: &Expr, params: &Map<String, Value>) -> Result<QueryPlan, PlanEr
         slice,
         order_by: unpushed_order,
         single,
+        count_only,
     })
 }
 
@@ -219,10 +239,131 @@ fn emit_predicate(expr: &Expr, ctx: &mut SqlCtx) -> Result<String, PlanError> {
             let sel = path_selector(&args[0])?;
             Ok(format!("{sel} IS NOT NULL"))
         }
+        Expr::FuncCall(name, args) if name == "references" && args.len() == 1 => {
+            // references("id") → true if any JSONB leaf contains {_ref: "id"}.
+            // We use a jsonpath containment check on the full `content` column.
+            let id_val = match &args[0] {
+                Expr::StringLiteral(s) => Value::String(s.clone()),
+                Expr::Param(p) => ctx
+                    .params
+                    .get(p)
+                    .cloned()
+                    .ok_or_else(|| PlanError::ParamMissing(p.clone()))?,
+                other => {
+                    return Err(PlanError::Unsupported(format!(
+                        "references() needs a string or param, got {other:?}"
+                    )));
+                }
+            };
+            ctx.bindings.push(id_val);
+            let idx = ctx.bindings.len() + 1;
+            Ok(format!(
+                "jsonb_path_exists(content, ('$.** ? (@._ref == \"' || ${idx} || '\")')::jsonpath)"
+            ))
+        }
+        Expr::In(l, r) => emit_in(l, r, ctx),
+        Expr::FuncCall(name, args) if (name == "match" || name.is_empty()) && args.len() == 2 => {
+            emit_match(&args[0], &args[1], ctx)
+        }
+        // `string match pattern` — parser represents `x match "y*"` as FuncCall("match", [x, y]).
+        // If we encounter it as a plain Expr::Eq-like infix we'd need a token, but we don't.
         other => Err(PlanError::Unsupported(format!(
             "filter expression not supported: {other:?}"
         ))),
     }
+}
+
+fn emit_in(l: &Expr, r: &Expr, ctx: &mut SqlCtx) -> Result<String, PlanError> {
+    if !is_path_expr(l) {
+        return Err(PlanError::Unsupported(format!(
+            "left side of `in` must be a path, got {l:?}"
+        )));
+    }
+    let sel = path_selector(l)?;
+
+    match r {
+        Expr::Array(items) => {
+            let mut placeholders = Vec::with_capacity(items.len());
+            for item in items {
+                if !is_value_expr(item) {
+                    return Err(PlanError::Unsupported(
+                        "`in` array must contain only literal/param values".into(),
+                    ));
+                }
+                placeholders.push(bind_value(item, ctx)?);
+            }
+            Ok(format!("{sel} IN ({})", placeholders.join(", ")))
+        }
+        Expr::Param(name) => {
+            // `x in $ids` — the param value is an array. Bind each element.
+            let arr = ctx
+                .params
+                .get(name)
+                .cloned()
+                .ok_or_else(|| PlanError::ParamMissing(name.clone()))?;
+            let Value::Array(items) = arr else {
+                return Err(PlanError::Unsupported(format!(
+                    "param ${name} for `in` must be an array"
+                )));
+            };
+            if items.is_empty() {
+                return Ok("FALSE".to_string());
+            }
+            let mut placeholders = Vec::with_capacity(items.len());
+            for v in items {
+                ctx.bindings.push(v);
+                placeholders.push(format!("${}", ctx.bindings.len() + 1));
+            }
+            Ok(format!("{sel} IN ({})", placeholders.join(", ")))
+        }
+        other => Err(PlanError::Unsupported(format!(
+            "right side of `in` must be array or param, got {other:?}"
+        ))),
+    }
+}
+
+/// `path match "pattern"` — supports glob-style `*` and `?`. Compiled to SQL
+/// `ILIKE` with the pattern chars translated (`*` → `%`, `?` → `_`).
+fn emit_match(l: &Expr, r: &Expr, ctx: &mut SqlCtx) -> Result<String, PlanError> {
+    if !is_path_expr(l) {
+        return Err(PlanError::Unsupported(format!(
+            "left side of `match` must be a path, got {l:?}"
+        )));
+    }
+    let sel = path_selector(l)?;
+    let pattern = match r {
+        Expr::StringLiteral(s) => s.clone(),
+        Expr::Param(name) => ctx
+            .params
+            .get(name)
+            .cloned()
+            .and_then(|v| v.as_str().map(String::from))
+            .ok_or_else(|| PlanError::ParamMissing(name.clone()))?,
+        other => {
+            return Err(PlanError::Unsupported(format!(
+                "`match` right side must be a string, got {other:?}"
+            )));
+        }
+    };
+    let ilike = glob_to_ilike(&pattern);
+    ctx.bindings.push(Value::String(ilike));
+    Ok(format!("{sel} ILIKE ${}", ctx.bindings.len() + 1))
+}
+
+fn glob_to_ilike(pattern: &str) -> String {
+    // Escape SQL LIKE specials (% and _), then translate glob *, ? to LIKE %, _.
+    let mut out = String::with_capacity(pattern.len() + 2);
+    for c in pattern.chars() {
+        match c {
+            '*' => out.push('%'),
+            '?' => out.push('_'),
+            '%' => out.push_str("\\%"),
+            '_' => out.push_str("\\_"),
+            '\\' => out.push_str("\\\\"),
+            other => out.push(other),
+        }
+    }
+    out
 }
 
 fn bin_cmp(l: &Expr, r: &Expr, op: &str, ctx: &mut SqlCtx) -> Result<String, PlanError> {
@@ -355,31 +496,101 @@ fn column_for_order(path: &[String]) -> Option<String> {
 fn build_projection_spec(fields: &[(String, Expr)]) -> Result<ProjectionSpec, PlanError> {
     let mut out = Vec::with_capacity(fields.len());
     for (name, expr) in fields {
-        let src = match expr {
-            Expr::Ident(s) => ProjectionSource::Ident(s.clone()),
-            Expr::DotAccess(..) | Expr::This => match extract_path(expr) {
-                Ok(p) if !p.is_empty() => ProjectionSource::Path(p),
-                _ => ProjectionSource::Unsupported,
-            },
-            _ => ProjectionSource::Unsupported,
-        };
+        let src = classify_projection(expr)?;
         out.push((name.clone(), src));
     }
     Ok(ProjectionSpec { fields: out })
 }
 
+fn classify_projection(expr: &Expr) -> Result<ProjectionSource, PlanError> {
+    match expr {
+        Expr::Ident(s) => Ok(ProjectionSource::Ident(s.clone())),
+        Expr::DotAccess(..) | Expr::This => match extract_path(expr) {
+            Ok(p) if !p.is_empty() => Ok(ProjectionSource::Path(p)),
+            _ => Ok(ProjectionSource::Unsupported),
+        },
+        Expr::Deref(inner, field) => {
+            // `a->field` → read the `_ref` at path `a`, resolve the doc, then
+            // extract `field` from it. Represent as Deref with sub_projection
+            // containing a single Ident field.
+            let path = extract_path(inner)?;
+            let sub = ProjectionSpec {
+                fields: vec![(field.clone(), ProjectionSource::Ident(field.clone()))],
+            };
+            Ok(ProjectionSource::Deref {
+                path,
+                sub_projection: Some(Box::new(sub)),
+            })
+        }
+        _ => Ok(ProjectionSource::Unsupported),
+    }
+}
+
 /// Apply a [`ProjectionSpec`] to an already-shaped document (with system fields).
+///
+/// `Deref` sources are NOT resolved here — the caller must post-process by
+/// inspecting [`extract_deref_requests`] and filling the resolved docs back
+/// in via [`apply_deref_resolutions`]. This keeps the sync function IO-free.
 pub fn apply_projection(spec: &ProjectionSpec, doc: &Value) -> Value {
     let mut out = Map::new();
     for (name, src) in &spec.fields {
         let v = match src {
             ProjectionSource::Ident(s) => doc.get(s).cloned().unwrap_or(Value::Null),
             ProjectionSource::Path(parts) => resolve_path(doc, parts),
+            ProjectionSource::Deref { path, .. } => {
+                // Leave a placeholder containing the _ref id so the executor
+                // can resolve in a second pass. null if no ref present.
+                let v = resolve_path(doc, path);
+                v.get("_ref").cloned().unwrap_or(Value::Null)
+            }
             ProjectionSource::Unsupported => Value::Null,
         };
         out.insert(name.clone(), v);
     }
     Value::Object(out)
+}
+
+/// Walk a [`ProjectionSpec`] and return the list of `(output_field_name, _ref_id)`
+/// pairs the executor still needs to resolve. Input is the already-projected
+/// document (from [`apply_projection`]).
+pub fn extract_deref_requests(
+    spec: &ProjectionSpec,
+    projected_doc: &Value,
+) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    for (name, src) in &spec.fields {
+        if let ProjectionSource::Deref { .. } = src {
+            if let Some(Value::String(id)) = projected_doc.get(name) {
+                out.push((name.clone(), id.clone()));
+            }
+        }
+    }
+    out
+}
+
+/// Replace Deref placeholders in a projected document with the resolved target
+/// (optionally further projected via `sub_projection`).
+pub fn apply_deref_resolutions(
+    spec: &ProjectionSpec,
+    projected_doc: &mut Value,
+    resolutions: &std::collections::HashMap<String, Value>,
+) {
+    let obj = match projected_doc.as_object_mut() {
+        Some(o) => o,
+        None => return,
+    };
+    for (name, src) in &spec.fields {
+        if let ProjectionSource::Deref { sub_projection, .. } = src {
+            let id_opt = obj.get(name).and_then(|v| v.as_str()).map(String::from);
+            let Some(id) = id_opt else { continue };
+            let target = resolutions.get(&id).cloned().unwrap_or(Value::Null);
+            let resolved = match sub_projection {
+                Some(sub) => apply_projection(sub, &target),
+                None => target,
+            };
+            obj.insert(name.clone(), resolved);
+        }
+    }
 }
 
 fn resolve_path(root: &Value, parts: &[String]) -> Value {
@@ -553,5 +764,78 @@ mod tests {
         };
         let out = apply_projection(&spec, &doc);
         assert_eq!(out, json!({"title": "Hi", "slug": "hi"}));
+    }
+
+    #[test]
+    fn count_wrapper_sets_flag() {
+        let p = do_plan(r#"count(*[_type == "page"])"#, json!({}));
+        assert!(p.count_only);
+        assert!(p.sql.contains("doc_type = $2"));
+    }
+
+    #[test]
+    fn in_with_array_literal() {
+        let p = do_plan(
+            r#"*[_type in ["page", "post", "note"]]"#,
+            json!({}),
+        );
+        assert!(p.sql.contains("IN ($2, $3, $4)"));
+        assert_eq!(p.bindings.len(), 3);
+    }
+
+    #[test]
+    fn in_with_param_array() {
+        let p = do_plan(
+            r#"*[_id in $ids]"#,
+            json!({"ids": ["a", "b"]}),
+        );
+        assert!(p.sql.contains("IN"));
+        assert_eq!(p.bindings.len(), 2);
+    }
+
+    #[test]
+    fn in_with_empty_param_array_returns_false() {
+        let p = do_plan(r#"*[_id in $ids]"#, json!({"ids": []}));
+        assert!(p.sql.contains("FALSE"));
+    }
+
+    #[test]
+    fn match_glob_compiles_to_ilike() {
+        // GROQ `match` is an infix operator: `field match "pattern"`.
+        let p = do_plan(r#"*[title match "Hello*"]"#, json!({}));
+        assert!(p.sql.contains("ILIKE"));
+        assert_eq!(p.bindings.len(), 1);
+        // * becomes %
+        if let Value::String(pat) = &p.bindings[0] {
+            assert!(pat.ends_with('%'));
+        } else {
+            panic!("expected string binding");
+        }
+    }
+
+    #[test]
+    fn references_function_generates_jsonpath() {
+        let p = do_plan(r#"*[references("doc-1")]"#, json!({}));
+        assert!(p.sql.contains("jsonb_path_exists"));
+        assert!(p.sql.contains("_ref"));
+    }
+
+    #[test]
+    fn deref_projection_captures_sub_spec() {
+        let p = do_plan(r#"*[_type == "page"]{author->name}"#, json!({}));
+        let spec = p.projection.expect("projection");
+        match &spec.fields[0].1 {
+            ProjectionSource::Deref { path, sub_projection } => {
+                assert_eq!(path, &vec!["author".to_string()]);
+                assert!(sub_projection.is_some());
+            }
+            other => panic!("expected Deref, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn glob_translation() {
+        assert_eq!(glob_to_ilike("*foo?bar"), "%foo_bar");
+        assert_eq!(glob_to_ilike("50%_off"), "50\\%\\_off");
     }
 }
