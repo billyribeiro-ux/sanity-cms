@@ -95,7 +95,7 @@ import {uuid} from '@sanity/uuid'
  * and the Document Internationalization plugin
  *
  * To run this script, you can use the Sanity CLI:
- * npx sanity@latest exec ./importPosts.ts --with-user-token
+ * pnpm dlx sanity@latest exec ./importPosts.ts --with-user-token
  */
 
 // Uses the projectId and dataset in `./sanity.cli.ts`

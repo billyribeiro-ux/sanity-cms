@@ -16,11 +16,11 @@ The Dashboard itself is mostly concerned about the layout of the configured widg
 
 In your Sanity Content Studio run:
 
-`npm install --save @sanity/dashboard`
+`pnpm add @sanity/dashboard`
 
 or
 
-`yarn add @sanity/dashboard`
+`pnpm add @sanity/dashboard`
 
 ## Basic usage
 
@@ -86,7 +86,7 @@ Install a Dashboard widget as you would any npm package.
 
 E.g. if you want to install the cats example widget mentioned below, proceed as follows:
 
-1. Run `yarn install @sanity/sanity-plugin-dashboard-widget-cats` in the studio directory
+1. Run `pnpm add @sanity/sanity-plugin-dashboard-widget-cats` in the studio directory
 2. Update your `sanity.config.js` by importing the widget and adding it to the widget array.
 3. You've got 🐱 in your Studio
 

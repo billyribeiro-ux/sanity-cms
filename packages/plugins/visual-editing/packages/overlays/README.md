@@ -7,7 +7,7 @@ Replace the dependency:
 
 ```sh
 npm uninstall @sanity/overlays
-npm install @sanity/visual-editing
+pnpm add @sanity/visual-editing
 ```
 
 Replace import statements:

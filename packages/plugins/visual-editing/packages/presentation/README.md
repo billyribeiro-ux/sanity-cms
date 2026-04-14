@@ -7,7 +7,7 @@ Replace the dependency:
 
 ```sh
 npm uninstall @sanity/presentation
-npm install sanity@latest
+pnpm add sanity@latest
 ```
 
 Replace import statements:

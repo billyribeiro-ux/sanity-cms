@@ -15,18 +15,18 @@ Not familiar with Sanity? [Visit www.sanity.io](https://www.sanity.io/)
 ## Installation
 
 ```
-npm install sanity-plugin-mux-input
+pnpm add sanity-plugin-mux-input
 ```
 
 or
 
 ```
-yarn add sanity-plugin-mux-input
+pnpm add sanity-plugin-mux-input
 ```
 
 ## Quick start
 
-- While in your project folder, run `npm i sanity-plugin-mux-input`.
+- While in your project folder, run `pnpm add sanity-plugin-mux-input`.
   Read more about [using plugins in Sanity here](https://beta.sanity.io/docs/platform/studio/plugin).
 
 * Make a schema type that uses the plugin's type `mux.video`, for example:
@@ -448,12 +448,12 @@ export default defineType({
 Issues are actively monitored and PRs are welcome. When developing this plugin the easiest setup is:
 
 1. Fork this repo.
-1. Create a studio v3 project: `npm create sanity@dev-preview`. Follow the prompts, starting out with the blog template is a good way to go.
-1. `cd` into your project directory, run `npm install && npm start` - your sanity studio should be running on http://localhost:3333.
+1. Create a studio v3 project: `pnpm create sanity@dev-preview`. Follow the prompts, starting out with the blog template is a good way to go.
+1. `cd` into your project directory, run `pnpm install && pnpm start` - your sanity studio should be running on http://localhost:3333.
 1. `cd` into the `plugins` directory of your project.
 1. Fork this repo and clone your fork into the `plugins` directory inside your project `git clone git@github.com:your-fork/sanity-plugin-mux-input.git`.
 1. Open `sanity.json`, go to the `plugins` array and add `mux-input`.
-1. Re-start the sanity studio server with `npm start`.
+1. Re-start the sanity studio server with `pnpm start`.
 1. Edit `schemas/post.js` and add follow the plugin documentation to add a `mux.video` type field.
 1. Your studio should reload, and now when you edit the plugin code it should reload the studio, when you're done creating a branch, put in a PR and a maintainer will review it. Thank you!
 
@@ -467,14 +467,14 @@ Semantic release will only release on configured branches, so it is safe to run 
 On the [studio-v2](/tree/studio-v2) branch this will result in:
 
 - a new version on the `latest` dist-tag.
-- running `yarn add sanity-plugin-mux-input` or `npm i sanity-plugin-mux-input` will fetch the new version.
+- running `pnpm add sanity-plugin-mux-input` will fetch the new version.
 - running `sanity install mux-input` will fetch the new version.
 - studio-v3 users are unaffected.
 
 On the [main](/tree/main) branch this will result in:
 
 - a new prerelease version on the `studio-v3` dist-tag.
-- running `yarn add sanity-plugin-mux-input@studio-v3` or `npm i sanity-plugin-mux-input@studio-v3` will fetch the new version.
+- running `pnpm add sanity-plugin-mux-input@studio-v3` will fetch the new version.
 - running `sanity install mux-input` won't fetch the new version.
 
 After Studio v3 turns stable this behavior will change. The v2 version will then be available on the `studio-v2` dist-tag, and `studio-v3` is upgraded to live on `latest`.
@@ -483,9 +483,9 @@ After Studio v3 turns stable this behavior will change. The v2 version will then
 
 You can run the example locally by doing the following:
 
-1. run `npm install` and `npm dev` on the root of the repo
+1. run `pnpm install` and `pnpm dev` on the root of the repo
 2. In the terminal, a command with `yalc` will be shown, that command will allow you to run the version that you have locally directly on the example or on your own app.
-3. run `npm install` and `npm dev` on the `/example` directory where the app with the example exists or in your own app
+3. run `pnpm install` and `pnpm dev` on the `/example` directory where the app with the example exists or in your own app
 4. the studio and app should auto reload with your changes in the plugin package you have locally
 
 ### Release new version

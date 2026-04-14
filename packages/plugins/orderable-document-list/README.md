@@ -35,13 +35,13 @@ export default defineConfig({
 Run the following command in your studio directory
 
 ```sh
-npm install --save @sanity/orderable-document-list
+pnpm add @sanity/orderable-document-list
 ```
 
 or
 
 ```sh
-yarn add @sanity/orderable-document-list
+pnpm add @sanity/orderable-document-list
 ```
 
 ## Usage
@@ -198,7 +198,7 @@ Put simply it updates the position of an individual – or many – Documents in
 
 ## Develop & test
 
-To run this plugin locally and develop, it uses the internal test studio used by the Development teams. You need to run install and npm run dev and you will have a clear and easy example to use.
+To run this plugin locally and develop, it uses the internal test studio used by the Development teams. You need to run install and pnpm run dev and you will have a clear and easy example to use.
 
 This plugin uses [@sanity/plugin-kit](https://github.com/sanity-io/plugin-kit)
 with default configuration for build & watch scripts.

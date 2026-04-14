@@ -8,7 +8,7 @@ import {getCliClient} from 'sanity/cli'
  * This migration is necessary for the new version of the plugin to work.
  *
  * 1. Take a backup of your dataset with:
- * `npx sanity@latest dataset export`
+ * `pnpm dlx sanity@latest dataset export`
  *
  * 2. Copy this file to the root of your Sanity Studio project
  *
@@ -16,7 +16,7 @@ import {getCliClient} from 'sanity/cli'
  * and `SCHEMA_TYPE` constants to match your use
  *
  * 4. Run the script (replace <schema-type> with the name of your schema type):
- * npx sanity@latest exec ./createMetadata.ts --with-user-token
+ * pnpm dlx sanity@latest exec ./createMetadata.ts --with-user-token
  *
  * 5. Repeat for every schema type and dataset using the updated plugin
  */

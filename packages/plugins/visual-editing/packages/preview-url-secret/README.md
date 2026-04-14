@@ -6,7 +6,7 @@
 [![size][size-badge]][bundlephobia]
 
 ```sh
-npm install @sanity/preview-url-secret @sanity/client
+pnpm add @sanity/preview-url-secret @sanity/client
 ```
 
 This package is used together with [`@sanity/presentation`]:
@@ -330,7 +330,7 @@ You don't have to check `isValid` before using it, as it'll be `undefined` if th
 You can view the generated url secrets that are in your dataset by installing the debug plugin:
 
 ```sh
-npm install @sanity/debug-preview-url-secret-plugin
+pnpm add @sanity/debug-preview-url-secret-plugin
 ```
 
 And adding it to your `sanity.config.ts`:

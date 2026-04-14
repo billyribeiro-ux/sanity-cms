@@ -30,7 +30,7 @@ Approaching your schemas in a more structured manner can often pay dividends dow
 Install using npm
 
 ```bash
-$ npm i --save @sanity/table
+$ pnpm add @sanity/table
 ```
 
 ## Usage

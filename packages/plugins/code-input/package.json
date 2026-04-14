@@ -50,7 +50,7 @@
     "link-watch": "plugin-kit link-watch",
     "lint": "eslint .",
     "prepare": "true",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "pnpm run build",
     "release": "changeset publish",
     "test": "jest",
     "type-check": "tsc --noEmit",

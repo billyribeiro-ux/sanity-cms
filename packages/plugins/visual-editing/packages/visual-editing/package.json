@@ -96,7 +96,7 @@
     "dev": "pnpm run build:main && pnpm run build:svelte",
     "lint": "eslint .",
     "prepack": "turbo run build",
-    "react-compiler-healthcheck": "(cd src && pnpx react-compiler-healthcheck@latest)",
+    "react-compiler-healthcheck": "(cd src && pnpm dlx react-compiler-healthcheck@latest)",
     "storybook": "storybook dev -p 6006",
     "test": "vitest --typecheck"
   },

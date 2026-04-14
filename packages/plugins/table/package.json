@@ -37,14 +37,14 @@
     "sanity.json"
   ],
   "scripts": {
-    "prebuild": "npm run clean && plugin-kit verify-package --silent && pkg-utils",
+    "prebuild": "pnpm run clean && plugin-kit verify-package --silent && pkg-utils",
     "build": "plugin-kit verify-package --silent && pkg-utils build --strict --check --clean",
     "clean": "rimraf lib",
     "format": "eslint . --fix --cache && prettier --write .",
     "link-watch": "plugin-kit link-watch",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --cache && prettier --check src",
     "prepare": "true",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "pnpm run build",
     "watch": "pkg-utils watch --strict"
   },
   "browserslist": "extends @sanity/browserslist-config",

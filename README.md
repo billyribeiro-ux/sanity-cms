@@ -37,8 +37,7 @@ cargo run --bin content-lake-api
 # API is now at http://localhost:3030
 
 # Terminal 2 — Studio
-pnpm install
-cp templates/starter/.env.example templates/starter/.env
+pnpm add cp templates/starter/.env.example templates/starter/.env
 pnpm --filter starter dev
 # Studio opens at http://localhost:3333 and talks ONLY to localhost:3030
 ```
@@ -189,8 +188,7 @@ are unaffected — they're inert until a user clicks.
 cp -r templates/starter ~/projects/client-xyz
 cd ~/projects/client-xyz
 # Edit .env with SANITY_STUDIO_API_HOST, projectId, dataset
-pnpm install
-pnpm dev
+pnpm add pnpm dev
 ```
 
 Each client gets their own Postgres (or their own dataset on a shared

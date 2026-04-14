@@ -9,13 +9,13 @@ A configurable Custom Input for Arrays that will add and update items by clickin
 ## Installation
 
 ```
-npm install --save sanity-plugin-hotspot-array
+pnpm add sanity-plugin-hotspot-array
 ```
 
 or
 
 ```
-yarn add sanity-plugin-hotspot-array
+pnpm add sanity-plugin-hotspot-array
 ```
 
 ## Usage

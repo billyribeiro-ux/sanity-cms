@@ -10,7 +10,7 @@ This package is used with the [Presentation](https://www.sanity.io/docs/presenta
 ## Getting started
 
 ```sh
-npm install @sanity/visual-editing react react-dom
+pnpm add @sanity/visual-editing react react-dom
 ```
 
 ## Table of contents
@@ -83,7 +83,7 @@ If you're using Next v13 or later you can use first class components that integr
 For App Router you should use the `VisualEditing` component from `next-sanity`:
 
 ```sh
-npm i next-sanity
+pnpm add next-sanity
 ```
 
 In your root `layout.tsx`, assuming you're using [Draft Mode](https://nextjs.org/docs/app/building-your-application/configuring/draft-mode) to toggle when to enable Visual Editing, add the `VisualEditing` component:
@@ -269,7 +269,7 @@ The `document` part of the payload contains the `_id`, `_type`, `_rev` and `slug
 For App Router you should use the `VisualEditing` component from `next-sanity`:
 
 ```sh
-npm i next-sanity
+pnpm add next-sanity
 ```
 
 The implementation makes use of [Server Actions][server-actions], here's the default internal implementation (simplified):

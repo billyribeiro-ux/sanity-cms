@@ -44,7 +44,7 @@
     "format": "prettier --write --cache --ignore-unknown .",
     "lint": "eslint .",
     "prepare": "true",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "pnpm run build",
     "watch": "pkg-utils watch --strict"
   },
   "browserslist": "extends @sanity/browserslist-config",

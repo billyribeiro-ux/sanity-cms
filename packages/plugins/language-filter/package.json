@@ -32,13 +32,13 @@
     "sanity.json"
   ],
   "scripts": {
-    "prebuild": "npm run clean",
+    "prebuild": "pnpm run clean",
     "build": "pkg build --strict && pkg check --strict",
     "clean": "rimraf lib",
     "link-watch": "plugin-kit link-watch",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint .",
     "prepare": "true",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "pnpm run build",
     "test": "jest",
     "watch": "pkg-utils watch"
   },

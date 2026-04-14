@@ -6,7 +6,7 @@
 [![size][size-badge]][bundlephobia]
 
 ```sh
-npm install @sanity/core-loader @sanity/client
+pnpm add @sanity/core-loader @sanity/client
 ```
 
 [gzip-badge]: https://img.shields.io/bundlephobia/minzip/@sanity/core-loader?label=gzip%20size&style=flat-square

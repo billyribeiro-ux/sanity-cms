@@ -9,7 +9,7 @@ import {getCliClient} from 'sanity/cli'
  * prefer to no longer have field names with double underscore prefixes.
  *
  * 1. Take a backup of your dataset with:
- * `npx sanity@latest dataset export`
+ * `pnpm dlx sanity@latest dataset export`
  *
  * 2. Copy this file to the root of your Sanity Studio project
  *
@@ -18,7 +18,7 @@ import {getCliClient} from 'sanity/cli'
  * previous versions of the plugin
  *
  * 4. Run the script (replace <schema-type> with the name of your schema type):
- * npx sanity@latest exec ./renameLanguageField.ts --with-user-token
+ * pnpm dlx sanity@latest exec ./renameLanguageField.ts --with-user-token
  *
  * 5. Repeat for every schema type and dataset using the updated plugin
  */

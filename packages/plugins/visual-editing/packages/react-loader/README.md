@@ -6,7 +6,7 @@
 [![size][size-badge]][bundlephobia]
 
 ```sh
-npm install @sanity/react-loader @sanity/client react@^18.2
+pnpm add @sanity/react-loader @sanity/client react@^18.2
 ```
 
 ## Usage

@@ -46,8 +46,8 @@
     "link-watch": "plugin-kit link-watch",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint .",
     "prepare": "true",
-    "prepublishOnly": "npm run build",
-    "test": "npm run lint && npm run type-check && npm run build",
+    "prepublishOnly": "pnpm run build",
+    "test": "pnpm run lint && pnpm run type-check && pnpm run build",
     "type-check": "tsc --noEmit",
     "watch": "pkg-utils watch --strict"
   },

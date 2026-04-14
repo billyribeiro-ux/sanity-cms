@@ -21,13 +21,13 @@ These will be re-added well before Studio V3 GA.
 In your studio folder, run:
 
 ```
-npm install --save @sanity/google-maps-input
+pnpm add @sanity/google-maps-input
 ```
 
 or
 
 ```
-yarn add @sanity/google-maps-input
+pnpm add @sanity/google-maps-input
 ```
 
 ## Usage

@@ -36,7 +36,7 @@ const client = getCliClient({apiVersion: '2023-06-30'})
 // as complete
 
 // 1. Take a backup of your dataset
-// `npx sanity@latest dataset export`
+// `pnpm dlx sanity@latest dataset export`
 // Consider making a duplicate and testing the migration on that first
 
 // 2. Modify this "TYPE" and "FIELD_NAME" variables
@@ -46,7 +46,7 @@ const TYPE = `presenter`
 const FIELD_NAME = `title`
 
 // 3. Run this script with:
-// `npx sanity@latest exec ./migrations/transformObjectToArray.ts --with-user-token`
+// `pnpm dlx sanity@latest exec ./migrations/transformObjectToArray.ts --with-user-token`
 
 const fetchDocuments = () =>
   client.fetch(

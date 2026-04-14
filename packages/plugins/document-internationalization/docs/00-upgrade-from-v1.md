@@ -121,7 +121,7 @@ For data hygiene, you may prefer to have a normalized field name for the languag
 ### 2.1 Install the new version of the plugin
 
 ```sh
-npm install @sanity/document-internationalization@latest
+pnpm add @sanity/document-internationalization@latest
 ```
 
 ### 2.2 Update your plugins array

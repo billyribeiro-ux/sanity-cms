@@ -7,7 +7,7 @@ Replace the dependency:
 
 ```sh
 npm uninstall @sanity/next-loader
-npm install next-sanity
+pnpm add next-sanity
 ```
 
 Replace import statements:

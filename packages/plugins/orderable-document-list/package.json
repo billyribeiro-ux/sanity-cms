@@ -46,13 +46,13 @@
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint .",
     "lint:fix": "eslint . --fix",
     "prepare": "true",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "pnpm run build",
     "watch": "pkg-utils watch --strict",
     "test": "vitest"
   },
   "husky": {
     "hooks": {
-      "pre-commit": "npm run lint:fix"
+      "pre-commit": "pnpm run lint:fix"
     }
   },
   "browserslist": "extends @sanity/browserslist-config",

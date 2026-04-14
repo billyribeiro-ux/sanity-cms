@@ -14,7 +14,7 @@ Replace the dependency:
 
 ```sh
 npm uninstall @sanity/nuxt-loader
-npm install @nuxtjs/sanity
+pnpm add @nuxtjs/sanity
 ```
 
 [`@nuxtjs/sanity`]: https://sanity.nuxtjs.org/getting-started/visual-editing

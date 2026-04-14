@@ -36,14 +36,14 @@
   ],
   "scripts": {
     "dev": "sanity dev",
-    "prebuild": "npm run clean && plugin-kit verify-package --silent && pkg-utils",
+    "prebuild": "pnpm run clean && plugin-kit verify-package --silent && pkg-utils",
     "build": "plugin-kit verify-package --silent && pkg-utils build --strict --check --clean",
     "clean": "rimraf dist",
     "link-watch": "plugin-kit link-watch",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint .",
     "lint:fix": "eslint . --fix",
     "prepare": "true",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "pnpm run build",
     "watch": "pkg-utils watch --strict"
   },
   "browserslist": "extends @sanity/browserslist-config",

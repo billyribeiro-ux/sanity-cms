@@ -14,10 +14,10 @@ Read more about loaders [here](https://www.sanity.io/docs/loaders-and-overlays).
 ## Installation
 
 ```sh
-npm install @sanity/svelte-loader
+pnpm add @sanity/svelte-loader
 
 # We will also need the following dependencies for fetching data and enabling visual editing
-npm install @sanity/client @sanity/visual-editing
+pnpm add @sanity/client @sanity/visual-editing
 ```
 
 ## Usage

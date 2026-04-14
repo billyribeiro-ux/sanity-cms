@@ -46,7 +46,7 @@
     "build": "plugin-kit verify-package --silent && pkg-utils build --strict --check --clean",
     "build:studio": "sanity build studio -y",
     "dev": "sanity dev",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "pnpm run build",
     "clean": "rimraf dist",
     "format": "prettier --write --cache --ignore-unknown .",
     "link-watch": "plugin-kit link-watch",
