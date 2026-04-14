@@ -1,0 +1,37 @@
+{
+  "types": {
+    "page": {
+      "fields": [
+        {"name": "_type", "type": "string", "value": "page"},
+        {"name": "title", "type": "string", "required": true, "max": 120},
+        {"name": "slug", "type": "object", "required": true, "fields": [
+          {"name": "current", "type": "string", "required": true, "pattern": "^[a-z0-9-]+$"}
+        ]},
+        {"name": "hero", "type": "image"},
+        {"name": "body", "type": "array", "of": ["block", "image"]},
+        {"name": "seo", "type": "object", "fields": [
+          {"name": "title", "type": "string", "max": 60},
+          {"name": "description", "type": "string", "max": 160},
+          {"name": "canonicalUrl", "type": "string"}
+        ]},
+        {"name": "publishedAt", "type": "datetime"}
+      ]
+    },
+    "siteSettings": {
+      "fields": [
+        {"name": "_type", "type": "string", "value": "siteSettings"},
+        {"name": "siteName", "type": "string", "required": true},
+        {"name": "siteDescription", "type": "string"},
+        {"name": "logo", "type": "image"},
+        {"name": "social", "type": "array", "of": ["object"]}
+      ]
+    },
+    "navigation": {
+      "fields": [
+        {"name": "_type", "type": "string", "value": "navigation"},
+        {"name": "title", "type": "string", "required": true},
+        {"name": "items", "type": "array"}
+      ]
+    }
+  }
+}

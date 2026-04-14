@@ -98,7 +98,35 @@ Content Lake contract for the implemented surface.
 ### Still honestly pending
 
 - **GROQ gaps**: arbitrary subqueries in projections, slice-expressions in filters, `order()` on nested arrays, `pt::text()` and other string helpers
-- **Server-side schema validation** — (agent in flight) Studio currently validates client-side only
+_None of the known gaps leak to Sanity.io — everything runs locally or fails with a 4xx._
+
+## Server-side schema validation
+
+Opt-in. Set `SCHEMA_FILE` to a JSON document describing your schemas and the
+backend will reject mutations that don't match. Empty registry (the default)
+runs zero validation — bring your own schemas when ready.
+
+See `content-lake-rs/examples/schema.example.json` for a full example. Minimal shape:
+
+```json
+{
+  "types": {
+    "page": {
+      "fields": [
+        {"name": "title", "type": "string", "required": true, "max": 120},
+        {"name": "slug",  "type": "object", "required": true,
+         "fields": [{"name": "current", "type": "string", "pattern": "^[a-z0-9-]+$"}]},
+        {"name": "body",  "type": "array", "of": ["block", "image"]}
+      ]
+    }
+  }
+}
+```
+
+Supported: string / number / boolean / null / datetime / reference / image /
+block / object / array-of-types; constraints `required`, `min`, `max`, `value`
+(exact), `pattern` (regex). Documents whose `_type` isn't in the registry
+pass through unchanged — validation is opt-in per type.
 - **Hardcoded-URL escape audit** of `@sanity/client` — most CDN/auth redirect URLs route via `apiHost`, but some may still reach `sanity.io`; catch via smoke-test
 
 ## Domain guard — why no traffic leaks to Sanity

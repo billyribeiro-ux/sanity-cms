@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use content_lake_core::events::bus::{EventBus, PresenceBus};
+use content_lake_core::schema::SchemaRegistry;
 use sqlx::PgPool;
 
 use crate::config::AppConfig;
@@ -18,10 +19,16 @@ struct InnerState {
     pub config: AppConfig,
     pub event_bus: EventBus,
     pub presence_bus: PresenceBus,
+    pub schema_registry: Arc<SchemaRegistry>,
 }
 
 impl AppState {
-    pub fn new(pool: PgPool, config: AppConfig, event_bus: EventBus) -> Self {
+    pub fn new(
+        pool: PgPool,
+        config: AppConfig,
+        event_bus: EventBus,
+        schema_registry: Arc<SchemaRegistry>,
+    ) -> Self {
         let presence_bus = PresenceBus::new(1024);
         Self {
             inner: Arc::new(InnerState {
@@ -29,6 +36,7 @@ impl AppState {
                 config,
                 event_bus,
                 presence_bus,
+                schema_registry,
             }),
         }
     }
@@ -47,5 +55,9 @@ impl AppState {
 
     pub fn presence_bus(&self) -> &PresenceBus {
         &self.inner.presence_bus
+    }
+
+    pub fn schema_registry(&self) -> &SchemaRegistry {
+        &self.inner.schema_registry
     }
 }
