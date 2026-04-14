@@ -128,17 +128,35 @@ IMG=$(mktemp --suffix=.png)
 # 1x1 transparent PNG (68 bytes)
 printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\xf8\x0f\x00\x01\x01\x01\x00\x1b\xb6\xee\x56\x00\x00\x00\x00IEND\xaeB`\x82' > "$IMG"
 
+# 7a — raw octet-stream upload
 upload=$(curl -s -X POST "$API/v1/assets/images/$DATASET?filename=test.png" \
   -H "Authorization: Bearer $TOKEN" \
   --data-binary "@$IMG")
-echo "$upload" | grep -q '"assetId"' || fail "asset upload" "$upload"
-ok "uploaded test.png, got assetId"
+echo "$upload" | grep -q '"assetId"' || fail "raw asset upload" "$upload"
+ok "raw octet-stream upload → assetId"
 
 ASSET_URL=$(echo "$upload" | python3 -c 'import json,sys;print(json.load(sys.stdin)["document"]["url"])')
 code=$(curl -s -o /dev/null -w "%{http_code}" "$ASSET_URL")
 [ "$code" = "200" ] || fail "serve asset" "$ASSET_URL → $code"
 ok "GET $ASSET_URL served the stored file"
-rm -f "$IMG"
+
+# 7b — multipart/form-data upload (Sanity's newer client path)
+multi=$(curl -s -X POST "$API/v1/assets/images/$DATASET" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@$IMG;filename=multi.png;type=image/png")
+echo "$multi" | grep -q '"assetId"' || fail "multipart upload" "$multi"
+ok "multipart/form-data upload → assetId"
+
+# 7c — generic file endpoint
+TXT=$(mktemp --suffix=.txt)
+echo "hello self-hosted cms" > "$TXT"
+fup=$(curl -s -X POST "$API/v1/assets/files/$DATASET?filename=note.txt" \
+  -H "Authorization: Bearer $TOKEN" \
+  --data-binary "@$TXT")
+echo "$fup" | grep -q '"sanity.fileAsset"' || fail "file upload" "$fup"
+ok "POST /v1/assets/files uploaded sanity.fileAsset"
+
+rm -f "$IMG" "$TXT"
 
 # ---- 8. delete ----
 hdr "delete"
