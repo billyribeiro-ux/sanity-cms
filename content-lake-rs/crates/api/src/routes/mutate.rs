@@ -108,6 +108,9 @@ async fn mutate(
 
         let (id, op, event) = match outcome {
             MutationResult::Created(doc) => {
+                // Validate the finished document against the schema registry
+                // BEFORE writing. An empty registry short-circuits to Ok.
+                validate_doc(&state, &doc)?;
                 let doc_id = doc._id.clone();
                 let inserted = repo::insert_document(
                     &mut *tx,
@@ -131,6 +134,7 @@ async fn mutate(
                 (doc_id, "create", Some(ev))
             }
             MutationResult::Updated(doc) => {
+                validate_doc(&state, &doc)?;
                 let doc_id = doc._id.clone();
                 let upserted = repo::upsert_document(
                     &mut *tx,
@@ -218,6 +222,25 @@ fn extract_target_id(m: &Mutation) -> Option<String> {
 fn new_rev() -> String {
     let s = Uuid::now_v7().as_simple().to_string();
     s[..16].to_string()
+}
+
+fn validate_doc(
+    state: &AppState,
+    doc: &content_lake_core::document::model::SanityDocument,
+) -> ApiResult<()> {
+    if state.schema_registry().is_empty() {
+        return Ok(());
+    }
+    // Materialize the document into wire-shape JSON before validating so the
+    // schema can inspect `_id`, `_type`, and user content together.
+    let mut m = doc.content.clone();
+    m.insert("_id".into(), Value::String(doc._id.clone()));
+    m.insert("_type".into(), Value::String(doc._type.clone()));
+    let wire = Value::Object(m);
+    state
+        .schema_registry()
+        .validate_document(&wire)
+        .map_err(|e| ApiError::BadRequest(format!("schema validation failed: {e}")))
 }
 
 fn map_engine_err(err: engine::MutationError) -> ApiError {

@@ -81,8 +81,18 @@ async fn main() -> anyhow::Result<()> {
     // Create event bus
     let event_bus = EventBus::new(config.event_bus_capacity);
 
+    // Load the optional document schema registry (SCHEMA_FILE env).
+    let schema_registry = std::sync::Arc::new(
+        content_lake_core::schema::SchemaRegistry::from_env_or_empty(),
+    );
+    if schema_registry.is_empty() {
+        tracing::info!("Schema validation disabled (no SCHEMA_FILE or empty registry)");
+    } else {
+        tracing::info!(types = schema_registry.len(), "Schema validation enabled");
+    }
+
     // Build application state
-    let state = state::AppState::new(pool, config.clone(), event_bus);
+    let state = state::AppState::new(pool, config.clone(), event_bus, schema_registry);
 
     // Build router with middleware
     let app = routes::build_router(state.clone())
