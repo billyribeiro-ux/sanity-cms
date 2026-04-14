@@ -5,13 +5,13 @@
   "dependencies": {
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:",
-    "eslint-config-turbo": "^2.8.2",
+    "eslint-config-turbo": "^2.9.6",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "catalog:"
   },
   "devDependencies": {
-    "@types/eslint": "^8.56.12",
-    "eslint": "^8.57.1",
+    "@types/eslint": "^9.6.1",
+    "eslint": "^9.39.4",
     "typescript": "catalog:"
   }
 }

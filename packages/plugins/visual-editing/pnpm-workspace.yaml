@@ -4,32 +4,32 @@ packages:
   - packages/@repo/*
 
 catalog:
-  '@sanity/assist': ^5.0.4
-  '@sanity/cli': ^5.8.1
-  '@sanity/client': ^7.18.0
+  '@sanity/assist': ^6.0.4
+  '@sanity/cli': ^6.3.1
+  '@sanity/client': ^7.21.0
   '@sanity/color-input': ^6.0.4
   '@sanity/icons': ^3.7.4
-  '@sanity/pkg-utils': ^10.4.4
+  '@sanity/pkg-utils': ^10.4.14
   '@sanity/tsconfig': 2.1.0
-  '@sanity/types': ^5.8.1
-  '@sanity/ui': ^3.1.11
-  '@sanity/util': ^5.8.1
-  '@sanity/vision': ^5.8.1
-  '@types/node': ^24.10.11
-  '@types/react': ^19.2.13
+  '@sanity/types': ^5.20.0
+  '@sanity/ui': ^3.1.14
+  '@sanity/util': ^5.20.0
+  '@sanity/vision': ^5.20.0
+  '@types/node': ^25.6.0
+  '@types/react': ^19.2.14
   '@types/react-dom': ^19.2.3
-  '@typescript-eslint/eslint-plugin': ^8.54.0
-  '@typescript-eslint/parser': ^8.54.0
+  '@typescript-eslint/eslint-plugin': ^8.58.2
+  '@typescript-eslint/parser': ^8.58.2
   eslint-plugin-react-hooks: ^7.0.1
   groq: ^5.8.1
-  react: ^19.2.4
-  react-dom: ^19.2.4
+  react: ^19.2.5
+  react-dom: ^19.2.5
   rxjs: ^7.8.2
-  sanity: ^5.8.1
-  sanity-plugin-asset-source-unsplash: ^7.0.3
-  styled-components: ^6.3.8
+  sanity: ^5.20.0
+  sanity-plugin-asset-source-unsplash: ^7.0.5
+  styled-components: ^6.4.0
   typescript: 5.9.3
-  xstate: ^5.26.0
+  xstate: ^5.30.0
 
 catalogs:
   tailwind3:
