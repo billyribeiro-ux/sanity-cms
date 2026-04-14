@@ -1,6 +1,0 @@
-/target
-.env
-uploads/
-*.swp
-*.swo
-.DS_Store
