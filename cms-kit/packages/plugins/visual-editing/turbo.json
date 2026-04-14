@@ -1,0 +1,28 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "globalDependencies": [".npmrc", "**/.env.*local"],
+  "tasks": {
+    "build": {
+      "outputs": [".svelte-kit/**", "dist/**", "dist-svelte/**"],
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "lint": {
+      "outputLogs": "errors-only"
+    },
+    "preview": {
+      "dependsOn": ["^build"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "react-compiler-healthcheck": {
+      "cache": false
+    }
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "name": "@sanity/core-loader",
+  "version": "2.0.7",
+  "homepage": "https://github.com/sanity-io/visual-editing/tree/main/packages/core-loader#readme",
+  "bugs": {
+    "url": "https://github.com/sanity-io/visual-editing/issues"
+  },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/sanity-io/visual-editing.git",
+    "directory": "packages/core-loader"
+  },
+  "files": [
+    "CHANGELOG.md",
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "encode-data-attribute": [
+        "./dist/encode-data-attribute.d.ts"
+      ],
+      "create-data-attribute": [
+        "./dist/create-data-attribute.d.ts"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./create-data-attribute": {
+      "import": "./dist/create-data-attribute.js",
+      "require": "./dist/create-data-attribute.cjs",
+      "source": "./src/createDataAttribute.ts",
+      "default": "./dist/create-data-attribute.js"
+    },
+    "./encode-data-attribute": {
+      "import": "./dist/encode-data-attribute.js",
+      "require": "./dist/encode-data-attribute.cjs",
+      "source": "./src/encodeDataAttribute.ts",
+      "default": "./dist/encode-data-attribute.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "pkg build --strict --check --clean",
+    "dev": "pkg build --strict",
+    "lint": "eslint .",
+    "prepack": "turbo run build",
+    "test": "vitest --pass-with-no-tests --typecheck"
+  },
+  "dependencies": {
+    "@sanity/client": "^7.18.0",
+    "@sanity/comlink": "^4.0.1",
+    "@sanity/presentation-comlink": "^2.0.1",
+    "@sanity/visual-editing-csm": "workspace:^"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/package.config": "workspace:*",
+    "@sanity/pkg-utils": "catalog:",
+    "@sanity/tsconfig": "catalog:",
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "async-cache-dedupe": "2.2.0",
+    "eslint": "^8.57.1",
+    "happy-dom": "^18.0.1",
+    "nanostores": "1.0.1",
+    "typescript": "catalog:",
+    "vitest": "^3.2.4"
+  },
+  "browserslist": "extends @sanity/browserslist-config",
+  "eslintConfig": {
+    "extends": [
+      "@repo/eslint-config"
+    ],
+    "root": true
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,35 @@
+export * from './jsx'
+export {encodeSanityNodeData, type SanityNode} from '@sanity/visual-editing-csm'
+export {
+  type SanityKey,
+  type SanityNodeContext,
+  type SanityPrimitive,
+  type SourceNode,
+  unwrapData,
+  type UnwrappedValue,
+  wrapData,
+  type WrappedValue,
+} from './wrap'
+export type {
+  Any,
+  ContentSourceMap,
+  ContentSourceMapDocument,
+  ContentSourceMapDocumentBase,
+  ContentSourceMapDocuments,
+  ContentSourceMapDocumentValueSource,
+  ContentSourceMapLiteralSource,
+  ContentSourceMapMapping,
+  ContentSourceMapMappings,
+  ContentSourceMapParsedPath,
+  ContentSourceMapParsedPathKeyedSegment,
+  ContentSourceMapPaths,
+  ContentSourceMapRemoteDocument,
+  ContentSourceMapSource,
+  ContentSourceMapUnknownSource,
+  ContentSourceMapValueMapping,
+  IndexTuple,
+  KeyedSegment,
+  Path,
+  PathSegment,
+  SanityDocument,
+} from '@sanity/client/csm'

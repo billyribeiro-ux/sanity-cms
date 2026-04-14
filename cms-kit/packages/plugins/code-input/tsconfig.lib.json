@@ -1,0 +1,15 @@
+{
+  // Enable isolated declarations once Sanity has new exported generics that makes it eaiser to use, with defineType, defineField, etc
+  // "extends": ["./tsconfig.settings", "@sanity/pkg-utils/tsconfig/isolated-declarations.json"],
+  "extends": "./tsconfig.settings",
+  "include": ["./src"],
+  "exclude": [
+    "./src/**/__fixtures__",
+    "./src/**/__mocks__",
+    "./src/**/*.test.ts",
+    "./src/**/*.test.tsx"
+  ],
+  "compilerOptions": {
+    "noCheck": true
+  }
+}

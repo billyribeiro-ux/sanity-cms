@@ -1,0 +1,105 @@
+{
+  "name": "@sanity/color-input",
+  "version": "4.0.6",
+  "description": "Color input",
+  "keywords": [
+    "sanity",
+    "cms",
+    "headless",
+    "realtime",
+    "content",
+    "color-input",
+    "sanity-plugin"
+  ],
+  "homepage": "https://github.com/sanity-io/color-input#readme",
+  "bugs": {
+    "url": "https://github.com/sanity-io/color-input/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:sanity-io/color-input.git"
+  },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "import": "./lib/index.mjs",
+      "require": "./lib/index.js",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./lib/index.js",
+  "module": "./lib/index.esm.js",
+  "types": "./lib/index.d.ts",
+  "files": [
+    "lib",
+    "src"
+  ],
+  "scripts": {
+    "build": "pkg-utils build --strict --check --clean",
+    "compile": "tsc --noEmit",
+    "format": "prettier --write --cache --ignore-unknown .",
+    "lint": "eslint .",
+    "prepare": "husky install",
+    "prepublishOnly": "npm run build",
+    "watch": "pkg-utils watch --strict"
+  },
+  "browserslist": "extends @sanity/browserslist-config",
+  "prettier": "@sanity/prettier-config",
+  "dependencies": {
+    "@sanity/icons": "^3.5.3",
+    "@sanity/ui": "^3.0.5",
+    "tinycolor2": "^1.6.0",
+    "react-color": "^2.19.3",
+    "use-effect-event": "^2.0.3"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "@eslint/js": "^9.38.0",
+    "@sanity/pkg-utils": "^6.11.1",
+    "@sanity/prettier-config": "1.0.3",
+    "@sanity/semantic-release-preset": "^5.0.0",
+    "@types/react": "^18.3.5",
+    "@types/react-color": "^2.17.11",
+    "@types/tinycolor2": "^1.4.6",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
+    "eslint": "^9.31.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "0.0.0-experimental-dffacc7b-20250717",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "husky": "^8.0.1",
+    "lint-staged": "^13.0.3",
+    "npm-run-all2": "^5.0.0",
+    "prettier": "^3.3.3",
+    "prettier-plugin-packagejson": "^2.5.19",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sanity": "^3.67.1",
+    "semantic-release": "^24.1.1",
+    "styled-components": "^6.1",
+    "typescript": "^5.6.2",
+    "typescript-eslint": "^8.37.0"
+  },
+  "peerDependencies": {
+    "react": "^18.3 || ^19",
+    "sanity": "^3.23.0 || ^4.0.0-0",
+    "styled-components": "^6.1"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "overrides": {
+    "conventional-changelog-conventionalcommits": ">= 8.0.0"
+  },
+  "packageManager": "pnpm@10.18.3",
+  "sanityExchangeUrl": "https://www.sanity.io/plugins/color-input"
+}

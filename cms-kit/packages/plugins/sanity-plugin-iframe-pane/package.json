@@ -1,0 +1,105 @@
+{
+  "name": "sanity-plugin-iframe-pane",
+  "version": "4.0.1",
+  "description": "Display any URL in a View Pane, along with helpful buttons to Copy the URL or open in a new tab",
+  "homepage": "https://github.com/sanity-io/sanity-plugin-iframe-pane#readme",
+  "bugs": {
+    "url": "https://github.com/sanity-io/sanity-plugin-iframe-pane/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:sanity-io/sanity-plugin-iframe-pane.git"
+  },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "import": "./lib/index.js",
+      "require": "./lib/index.cjs",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./lib/index.cjs",
+  "module": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "files": [
+    "src",
+    "lib",
+    "sanity.json",
+    "v2-incompatible.js"
+  ],
+  "scripts": {
+    "build": "plugin-kit verify-package --silent && pkg-utils build --strict --check --clean",
+    "clean": "rimraf lib",
+    "format": "prettier --write --cache --ignore-unknown .",
+    "link-watch": "plugin-kit link-watch",
+    "lint": "eslint .",
+    "prepare": "husky install || true",
+    "prepublishOnly": "npm run build",
+    "test": "npm run lint && npm run type-check && npm run build",
+    "type-check": "tsc --noEmit",
+    "watch": "pkg-utils watch --strict"
+  },
+  "browserslist": "extends @sanity/browserslist-config",
+  "prettier": "@sanity/prettier-config",
+  "overrides": {
+    "conventional-changelog-conventionalcommits": ">= 8.0.0"
+  },
+  "dependencies": {
+    "@sanity/icons": "^3.7.4",
+    "@sanity/incompatible-plugin": "^1.0.5",
+    "@sanity/preview-url-secret": "^2.1.14",
+    "@sanity/ui": "^3.0.5",
+    "framer-motion": "^12.23.12",
+    "suspend-react": "0.1.3"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@sanity/pkg-utils": "^7.11.4",
+    "@sanity/plugin-kit": "^4.0.19",
+    "@sanity/prettier-config": "^1.0.6",
+    "@sanity/semantic-release-preset": "^5.0.0",
+    "@types/react": "^19.1.9",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-config-react-app": "^7.0.1",
+    "eslint-config-sanity": "^7.1.4",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.0.1",
+    "prettier": "^3.6.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "rimraf": "^5.0.1",
+    "sanity": "^4.3.0",
+    "styled-components": "^6.1.19",
+    "typescript": "5.9.2"
+  },
+  "peerDependencies": {
+    "react": "^18.3 || ^19",
+    "sanity": "^4 || ^5.0.0",
+    "styled-components": "^6"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "sanityPlugin": {
+    "verifyPackage": {
+      "nodeEngine": false
+    }
+  }
+}

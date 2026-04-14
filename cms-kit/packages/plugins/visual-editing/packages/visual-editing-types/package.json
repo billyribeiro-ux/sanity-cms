@@ -1,0 +1,75 @@
+{
+  "name": "@sanity/visual-editing-types",
+  "version": "2.0.5",
+  "homepage": "https://github.com/sanity-io/visual-editing/tree/main/packages/visual-editing-types#readme",
+  "bugs": {
+    "url": "https://github.com/sanity-io/visual-editing/issues"
+  },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/sanity-io/visual-editing.git",
+    "directory": "packages/visual-editing-types"
+  },
+  "files": [
+    "CHANGELOG.md",
+    "dist",
+    "src",
+    "!**/*.test.*"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": "./dist/index.js",
+      "./package.json": "./package.json"
+    }
+  },
+  "scripts": {
+    "build": "pkg build --strict --check --clean",
+    "dev": "pkg build --strict",
+    "lint": "eslint .",
+    "prepack": "turbo run build"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/package.config": "workspace:*",
+    "@sanity/client": "catalog:",
+    "@sanity/insert-menu": "workspace:^",
+    "@sanity/pkg-utils": "catalog:",
+    "@sanity/tsconfig": "catalog:",
+    "@sanity/types": "catalog:",
+    "eslint": "^8.57.1",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "@sanity/client": "^7.18.0",
+    "@sanity/types": "*"
+  },
+  "peerDependenciesMeta": {
+    "@sanity/types": {
+      "optional": true
+    }
+  },
+  "browserslist": "extends @sanity/browserslist-config",
+  "eslintConfig": {
+    "extends": [
+      "@repo/eslint-config"
+    ],
+    "root": true
+  },
+  "engines": {
+    "node": ">=20.19 <22 || >=22.12"
+  }
+}

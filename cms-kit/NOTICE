@@ -1,0 +1,18 @@
+cms-kit
+=======
+
+This project is a personal toolkit built on top of Sanity Studio.
+
+Portions of this repository are derived from Sanity Studio
+(https://github.com/sanity-io/sanity), Copyright (c) 2016-2026 Sanity.io,
+licensed under the MIT License.
+
+Vendored upstream code lives under:
+  packages/plugins/vision/   (derived from @sanity/vision v5.12.0)
+
+Modifications and additional code are Copyright (c) 2026 Billy Ribeiro,
+also licensed under the MIT License.
+
+"Sanity", "Sanity Studio", and related marks are trademarks of Sanity.io
+and are not used to identify this project. This project is neither
+affiliated with nor endorsed by Sanity.io.

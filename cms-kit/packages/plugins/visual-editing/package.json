@@ -1,0 +1,59 @@
+{
+  "name": "visual-editing-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build --filter='!./apps/*'",
+    "dev": "turbo run build --filter='!./apps/*' && turbo watch dev --filter='./packages/*' --filter='./packages/@repo/*' --filter=./apps/*",
+    "dev:live-next": "turbo run build --filter=live-next^... --filter=apps-studio^... && turbo watch dev --filter=live-next... --filter=apps-studio...",
+    "dev:next": "turbo run build --filter=apps-next^... --filter=apps-studio^... && turbo watch dev --filter=apps-next... --filter=apps-studio...",
+    "dev:page-builder-demo": "turbo run build --filter=page-builder-demo^... --filter=apps-studio^... && turbo watch dev --filter=page-builder-demo... --filter=apps-studio...",
+    "format": "oxfmt . --no-error-on-unmatched-pattern",
+    "knip": "knip",
+    "lint": "turbo run lint",
+    "lint:fix": "pnpm lint -- --fix",
+    "preview": "turbo run preview",
+    "release:canary": "zx scripts/release-canary.mjs",
+    "release:corel": "zx scripts/release-corel.mjs",
+    "report:react-compiler-healthcheck": "turbo run react-compiler-healthcheck",
+    "storybook:visual-editing": "turbo run build --filter='@sanity/visual-editing^...' && turbo watch dev storybook --filter='@sanity/visual-editing...'",
+    "test": "turbo run test",
+    "turbo:fix": "turbo daemon clean"
+  },
+  "devDependencies": {
+    "@sanity/pkg-utils": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "knip": "^5.83.0",
+    "oxfmt": "^0.28.0",
+    "turbo": "^2.8.2",
+    "typescript": "catalog:",
+    "zx": "8.1.6"
+  },
+  "packageManager": "pnpm@10.28.2",
+  "pnpm": {
+    "peerDependencyRules": {
+      "allowAny": [
+        "@sanity/client",
+        "react",
+        "react-dom"
+      ]
+    },
+    "overrides": {
+      "@sanity/client": "catalog:",
+      "@sanity/core-loader": "workspace:*",
+      "@sanity/preview-url-secret": "workspace:*",
+      "@sanity/react-loader": "workspace:*",
+      "@sanity/svelte-loader": "workspace:*",
+      "@sanity/types": "catalog:",
+      "@sanity/util": "catalog:",
+      "@sanity/visual-editing": "workspace:*",
+      "@sanity/visual-editing-csm": "workspace:*",
+      "@types/react": "catalog:",
+      "@types/react-dom": "catalog:",
+      "eslint-plugin-react-hooks": "catalog:",
+      "groq": "catalog:",
+      "sanity": "catalog:"
+    }
+  }
+}

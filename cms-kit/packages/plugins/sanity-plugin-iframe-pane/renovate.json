@@ -1,0 +1,15 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>sanity-io/renovate-config",
+    "github>sanity-io/renovate-config:studio-v3",
+    ":reviewer(team:ecosystem)"
+  ],
+  "packageRules": [
+    {
+      "matchDepNames": ["@sanity/preview-url-secret"],
+      "rangeStrategy": "bump",
+      "semanticCommitType": "fix"
+    }
+  ]
+}

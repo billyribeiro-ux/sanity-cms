@@ -1,0 +1,33 @@
+{
+  "name": "apps-studio",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "sanity build --source-maps -y && sanity manifest extract",
+    "dev": "rimraf .sanity && sanity dev"
+  },
+  "dependencies": {
+    "@repo/env": "workspace:*",
+    "@repo/sanity-schema": "workspace:*",
+    "@sanity/client": "catalog:",
+    "@sanity/debug-preview-url-secret-plugin": "^2.0.6",
+    "@sanity/preview-url-secret": "workspace:^",
+    "@sanity/ui": "catalog:",
+    "@sanity/vercel-protection-bypass": "^5.0.5",
+    "@sanity/vision": "catalog:",
+    "@sanity/visual-editing-csm": "workspace:*",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vercel/stega": "^1.1.0",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "sanity": "catalog:",
+    "styled-components": "catalog:",
+    "typescript": "catalog:"
+  },
+  "devDependencies": {
+    "@tsconfig/vite-react": "^7.0.2",
+    "babel-plugin-react-compiler": "1.0.0",
+    "rimraf": "^5.0.5"
+  }
+}

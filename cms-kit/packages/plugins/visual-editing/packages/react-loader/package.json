@@ -1,0 +1,109 @@
+{
+  "name": "@sanity/react-loader",
+  "version": "2.0.8",
+  "homepage": "https://github.com/sanity-io/visual-editing/tree/main/packages/react-loader#readme",
+  "bugs": {
+    "url": "https://github.com/sanity-io/visual-editing/issues"
+  },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/sanity-io/visual-editing.git",
+    "directory": "packages/react-loader"
+  },
+  "files": [
+    "CHANGELOG.md",
+    "dist",
+    "src",
+    "!**/*.test.*",
+    "!**/__fixtures__/*"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "jsx": [
+        "./dist/jsx.d.ts"
+      ],
+      "rsc": [
+        "./dist/rsc/index.d.ts"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "deno": "./dist/index.js",
+      "edge": "./dist/index.js",
+      "edge-light": "./dist/index.js",
+      "worker": "./dist/index.js",
+      "react-server": "./dist/rsc/index.react-server.js",
+      "browser": {
+        "source": "./src/index.browser.ts",
+        "require": "./dist/index.browser.cjs",
+        "import": "./dist/index.browser.js"
+      },
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./jsx": {
+      "source": "./src/jsx/index.ts",
+      "import": "./dist/jsx.js",
+      "require": "./dist/jsx.cjs",
+      "default": "./dist/jsx.js"
+    },
+    "./package.json": "./package.json",
+    "./rsc": {
+      "source": "./src/rsc/index.ts",
+      "react-server": "./dist/rsc/index.react-server.js",
+      "import": "./dist/rsc/index.js",
+      "require": "./dist/rsc/index.cjs",
+      "default": "./dist/rsc/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "pkg build --strict --check --clean",
+    "dev": "pkg build --strict",
+    "lint": "eslint .",
+    "prepack": "turbo run build",
+    "test": "vitest --typecheck"
+  },
+  "dependencies": {
+    "@sanity/client": "^7.18.0",
+    "@sanity/core-loader": "workspace:^",
+    "@sanity/visual-editing-csm": "workspace:^"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/package.config": "workspace:*",
+    "@sanity/pkg-utils": "catalog:",
+    "@sanity/tsconfig": "catalog:",
+    "@types/react": "catalog:",
+    "eslint": "^8.57.1",
+    "fast-deep-equal": "3.1.3",
+    "react": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "react": "^18.3 || ^19"
+  },
+  "browserslist": "extends @sanity/browserslist-config",
+  "eslintConfig": {
+    "extends": [
+      "@repo/eslint-config"
+    ],
+    "root": true
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
