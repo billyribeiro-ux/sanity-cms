@@ -26,7 +26,7 @@ use axum::{
     extract::{Path, State},
     response::Json,
     routing::post,
-    Router,
+    Extension, Router,
 };
 use chrono::Utc;
 use serde::Deserialize;
@@ -36,6 +36,7 @@ use uuid::Uuid;
 
 use crate::{
     error::{ApiError, ApiResult},
+    middleware::auth::CurrentUser,
     routes::doc::map_repo_err,
     state::AppState,
 };
@@ -65,10 +66,11 @@ struct MutateRequest {
     visibility: Option<String>,
 }
 
-#[tracing::instrument(skip(state, body))]
+#[tracing::instrument(skip(state, current_user, body))]
 async fn mutate(
     State(state): State<AppState>,
     Path(dataset): Path<String>,
+    current_user: Option<Extension<CurrentUser>>,
     Json(body): Json<MutateRequest>,
 ) -> ApiResult<Json<Value>> {
     let project = state.config().bootstrap_project.clone();
@@ -203,7 +205,7 @@ async fn mutate(
             &mut tx,
             dataset_id,
             &tx_id,
-            None, // TODO: populate author from CurrentUser extension
+            current_user.as_ref().map(|u| u.email.as_str()),
             &Value::Array(raw_mutations),
             &touched,
         )
