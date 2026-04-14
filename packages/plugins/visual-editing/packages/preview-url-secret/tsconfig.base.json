@@ -1,0 +1,10 @@
+{
+  "extends": "@sanity/tsconfig/strictest",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noPropertyAccessFromIndexSignature": false
+  }
+}

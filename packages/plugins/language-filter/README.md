@@ -1,0 +1,1 @@
+# [This plugin has been moved to the sanity plugins monorepo](https://github.com/sanity-io/plugins/tree/main/plugins/@sanity/language-filter)

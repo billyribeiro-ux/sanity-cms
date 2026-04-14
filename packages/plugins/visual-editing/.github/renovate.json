@@ -1,0 +1,65 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>sanity-io/renovate-config"],
+  "ignorePresets": [":ignoreModulesAndTests", "github>sanity-io/renovate-config:group-non-major"],
+  "automerge": true,
+  "packageRules": [
+    {
+      "description": "Enable automerge with GitHub merge queues (note that this doesn't bypass required checks and code reviews)",
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "matchDepTypes": ["dependencies", "devDependencies"],
+      "rangeStrategy": "bump"
+    },
+    {
+      "matchDepTypes": ["peerDependencies"],
+      "rangeStrategy": "bump",
+      "matchPackageNames": [
+        "!@sveltejs/kit",
+        "!svelte",
+        "!vue",
+        "!next",
+        "!vue-router",
+        "!nuxt",
+        "!react",
+        "!react-dom",
+        "!styled-components",
+        "!react-router"
+      ]
+    },
+    {
+      "matchDepNames": ["sanity", "@sanity/util", "@sanity/types"],
+      "matchFileNames": ["packages/preview-url-secret/package.json"],
+      "matchDepTypes": ["devDependencies", "peerDependencies"],
+      "schedule": ["at any time"],
+      "rangeStrategy": "bump",
+      "groupSlug": "sanity",
+      "semanticCommitType": "chore"
+    },
+    {
+      "matchDepNames": [
+        "@nanostores/vue",
+        "@sanity/client",
+        "async-cache-dedupe",
+        "fast-deep-equal",
+        "nanostores",
+        "nuxt",
+        "styled-components"
+      ],
+      "semanticCommitType": "fix",
+      "rangeStrategy": "bump"
+    },
+    {
+      "matchPackageNames": ["eslint-plugin-react-hooks"],
+      "description": "Disable until 5.2 is out",
+      "enabled": false
+    },
+    {
+      "matchPackageNames": ["zx"],
+      "description": "Disable until the zx scripts we have work with the newer versions",
+      "enabled": false
+    }
+  ]
+}

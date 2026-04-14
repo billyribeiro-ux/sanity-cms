@@ -1,0 +1,108 @@
+{
+  "name": "@sanity/preview-url-secret",
+  "version": "4.0.4",
+  "homepage": "https://github.com/sanity-io/visual-editing/tree/main/packages/preview-url-secret#readme",
+  "bugs": {
+    "url": "https://github.com/sanity-io/visual-editing/issues"
+  },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/sanity-io/visual-editing.git",
+    "directory": "packages/preview-url-secret"
+  },
+  "files": [
+    "CHANGELOG.md",
+    "dist",
+    "src",
+    "!src/**/*.test-d.ts",
+    "!src/**/*.test.ts"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./constants": {
+      "source": "./src/_exports/constants.ts",
+      "default": "./dist/constants.js"
+    },
+    "./create-secret": {
+      "source": "./src/_exports/create-secret.ts",
+      "default": "./dist/create-secret.js"
+    },
+    "./define-preview-url": {
+      "source": "./src/_exports/define-preview-url.ts",
+      "default": "./dist/define-preview-url.js"
+    },
+    "./get-redirect-to": {
+      "source": "./src/_exports/get-redirect-to.ts",
+      "default": "./dist/get-redirect-to.js"
+    },
+    "./package.json": "./package.json",
+    "./toggle-preview-access-sharing": {
+      "source": "./src/_exports/toggle-preview-access-sharing.ts",
+      "default": "./dist/toggle-preview-access-sharing.js"
+    },
+    "./toggle-vercel-protection-bypass": {
+      "source": "./src/_exports/toggle-vercel-protection-bypass.ts",
+      "default": "./dist/toggle-vercel-protection-bypass.js"
+    },
+    "./without-secret-search-params": {
+      "source": "./src/_exports/without-secret-search-params.ts",
+      "default": "./dist/without-secret-search-params.js"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": "./dist/index.js",
+      "./constants": "./dist/constants.js",
+      "./create-secret": "./dist/create-secret.js",
+      "./define-preview-url": "./dist/define-preview-url.js",
+      "./get-redirect-to": "./dist/get-redirect-to.js",
+      "./toggle-preview-access-sharing": "./dist/toggle-preview-access-sharing.js",
+      "./toggle-vercel-protection-bypass": "./dist/toggle-vercel-protection-bypass.js",
+      "./without-secret-search-params": "./dist/without-secret-search-params.js",
+      "./package.json": "./package.json"
+    }
+  },
+  "scripts": {
+    "build": "pkg build --strict --check --clean",
+    "dev": "pkg build --strict",
+    "lint": "eslint .",
+    "prepack": "turbo run build",
+    "test": "vitest --pass-with-no-tests --typecheck"
+  },
+  "dependencies": {
+    "@sanity/uuid": "3.0.2"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/package.config": "workspace:*",
+    "@sanity/client": "catalog:",
+    "@sanity/pkg-utils": "catalog:",
+    "@sanity/tsconfig": "catalog:",
+    "eslint": "^8.57.1",
+    "typescript": "catalog:",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "@sanity/client": "^7.18.0"
+  },
+  "browserslist": "extends @sanity/browserslist-config",
+  "eslintConfig": {
+    "extends": [
+      "@repo/eslint-config"
+    ],
+    "root": true
+  },
+  "engines": {
+    "node": ">=20.19 <22 || >=22.12"
+  }
+}
